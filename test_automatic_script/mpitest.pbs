@@ -1,0 +1,15 @@
+#!/bin/bash
+#PBS -l nodes=2:ppn=20,walltime=1:00 
+#PBS -N scripttestJob
+#PBS -q edu_shared
+
+#PBS -e mpitest.err
+#PBS -o mpitest.out
+#PBS -d /export/home/acipol2/ece566_hw/test_automatic_script/
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np 64 ./mpitest.o 32
+
+
+
