@@ -5,6 +5,22 @@ rank: 3, cord: [0][1][1], 6, 7
 rank: 4, cord: [1][0][0], 8, 9
 rank: 5, cord: [1][0][1], 10, 11
 rank: 6, cord: [1][1][0], 12, 13
-Sum: 120
 rank: 7, cord: [1][1][1], 14, 15
+res[0] = 1
+res[1] = 5
+res[2] = 9
+res[3] = 13
+res[4] = 17
+res[5] = 21
+res[6] = 25
+res[7] = 29
+res[8] = 0
+res[9] = 0
+res[10] = 0
+res[11] = 0
+res[12] = 0
+res[13] = 0
+res[14] = 0
+res[15] = 0
+Sum: 120
 Job complete

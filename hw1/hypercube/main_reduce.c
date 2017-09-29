@@ -6,7 +6,6 @@
 #define N 32
 #define D 3
 
-
 int main(int argc, char** argv) {
 
   MPI_Comm hc_comm;
