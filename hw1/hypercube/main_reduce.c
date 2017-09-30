@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
   }
 
   initial_time = MPI_Wtime();
+
   MPI_Cart_create(MPI_COMM_WORLD, D, dim, period, reorder, &hc_comm);
 
   MPI_Comm_size(hc_comm, &world_size);
@@ -57,8 +58,8 @@ int main(int argc, char** argv) {
 
   partial_sum = 0;
   for ( i = 0 ; i < N/(P); i++ )
-    partial_sum += partial_data[i]; 
-  
+    partial_sum += partial_data[i];
+
   MPI_Reduce(&partial_sum, &result, 1, MPI_INT, MPI_SUM, 0, hc_comm);
 
   if ( rank == 0 )
