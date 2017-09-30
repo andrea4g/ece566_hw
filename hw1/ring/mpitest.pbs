@@ -1,12 +1,12 @@
 #!/bin/bash
-#PBS -l nodes=8:ppn=2,walltime=1:00 
-#PBS -N hctestJob
+#PBS -l nodes=8:ppn=1,walltime=1:00 
+#PBS -N ringtestjob
 #PBS -q edu_shared
 
 #PBS -e mpitest.err
 #PBS -o mpitest.out
-#PBS -d /export/home/agualc2/ece566_hw/hw1/ring
+#PBS -d /export/home/acipol2/ece566_hw/hw1/ring
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./ringtest
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./ringtest 1048576000

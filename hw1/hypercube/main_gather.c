@@ -33,10 +33,9 @@ int main(int argc, char** argv) {
   MPI_Cart_coords(hc_comm, rank, D, cord);
 
   if (cord[0] == 0 && cord[1] == 0 && cord[2] == 0) {
-    //srand(NULL);
+    srand(NULL);
     for (i = 0; i < N; i++) {
-      //data[i] = rand() % 20;
-      data[i] = i;
+      data[i] = rand() % 20;
     }
   }
   /* Implement the scatter (one-to-all personalized) */

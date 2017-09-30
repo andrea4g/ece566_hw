@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l nodes=8:ppn=2,walltime=1:00 
+#PBS -l nodes=2:ppn=2,walltime=1:00 
 #PBS -N hctestJob
 #PBS -q edu_shared
 
@@ -9,4 +9,4 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./hctest
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./hctest 1048576000 

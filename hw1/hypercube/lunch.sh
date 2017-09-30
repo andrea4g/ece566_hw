@@ -6,7 +6,7 @@ fi
 
 cat /dev/null > out.txt
 
-for i in {1..20}; do
+for i in {1..10}; do
   qsub mpitest.pbs
   while [ ! -f ./mpitest.out ]; do
     sleep 1

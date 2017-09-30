@@ -1,18 +1,27 @@
-Proc: 5, time: 0.020188
-Proc: 7, time: 0.020200
-Proc: 1, time: 0.020361
-Proc: 3, time: 0.020385
-Proc: 6, time: 0.020725
-Proc: 4, time: 0.020788
-Proc: 13, time: 0.020833
-Proc: 2, time: 0.020912
-Proc: 15, time: 0.020932
-Proc: 11, time: 0.021273
-Proc: 14, time: 0.021438
-Proc: 9, time: 0.021597
-Proc: 12, time: 0.021756
-Proc: 10, time: 0.021765
-Sum: 534822912
-Proc: 8, time: 0.022248
-Proc: 0, time: 0.022259
+262144000
+2
+262144000
+2
+51295010
+6a55a010
+262144000
+2
+f6376010
+262144000
+2
+cb521010
+0
+0
+0
+0
+
+===================================================================================
+=   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES
+=   EXIT CODE: 11
+=   CLEANING UP REMAINING PROCESSES
+=   YOU CAN IGNORE THE BELOW CLEANUP MESSAGES
+===================================================================================
+YOUR APPLICATION TERMINATED WITH THE EXIT STRING: Segmentation fault (signal 11)
+This typically refers to a problem with your application.
+Please see the FAQ page for debugging suggestions
 Job complete

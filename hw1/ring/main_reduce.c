@@ -2,57 +2,70 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-#define N 4096000
-#define P 16
 
 int main(int argc, char** argv) {
 
   MPI_Comm ring_comm;
-  int dim = P;
   int period = 1;
   int reorder = 1;
   int cord;
-  int world_size;
+  int k;
   int rank;
-  int data[N];
-  int partial_data[N/P];
+  int n;
+  int* data;
+  int* partial_data;
+  int card_partial_data;
   int i;
+  int root_cord,root_rank;
   int result;
   int partial_sum = 0;
   double initial_time, final_time;
+
+  n = atoi(argv[1]);                // Number of elements of the array A
 
   MPI_Init(&argc,&argv);
 
   initial_time = MPI_Wtime();
 
-  MPI_Cart_create(MPI_COMM_WORLD, 1, &dim, &period, reorder, &ring_comm);
+  MPI_Comm_size(MPI_COMM_WORLD, &k);
 
-  MPI_Comm_size(ring_comm, &world_size);
+  MPI_Cart_create(MPI_COMM_WORLD, 1, &k, &period, reorder, &ring_comm);
+  
+
+  card_partial_data = n/k;
+  data = (int *) malloc(n*sizeof(int));
+  partial_data = (int *) malloc(card_partial_data*sizeof(int));
+  
 
   MPI_Comm_rank(ring_comm, &rank);
+
   MPI_Cart_coords(ring_comm, rank, 1, &cord);
 
   if (cord == 0) {
-    //srand(NULL);
-    for (i = 0; i < N; i++) {
-      //data[i] = rand() % 20;
-      data[i] = i;
+    srand(NULL);
+    for (i = 0; i < n; i++) {
+      data[i] = rand();
     }
   }
 
-  MPI_Scatter(data, N/P, MPI_INT, partial_data, N/P, MPI_INT, 0, ring_comm);
+  root_cord = 0;
+  MPI_Cart_rank(ring_comm,&root_cord,&root_rank);
+  MPI_Scatter(data, card_partial_data, MPI_INT, partial_data, card_partial_data, MPI_INT,root_rank,ring_comm);
 
-  for ( i = 0 ; i < N/P; i++ )
+  printf("After scatter\n");
+  for ( i = 0 ; i < card_partial_data; i++ )
     partial_sum += partial_data[i];
 
-  MPI_Reduce(&partial_sum, &result, 1, MPI_INT, MPI_SUM, 0, ring_comm);
+  MPI_Reduce(&partial_sum, &result, 1, MPI_INT, MPI_SUM, root_rank, ring_comm);
 
-  if ( rank == 0 )
+  if ( cord == 0 )
     printf("Sum: %d\n", result);
 
   final_time = MPI_Wtime();
   printf("Proc: %d, %f\n", cord, final_time - initial_time);
 
+  free(data);
+  free(partial_data);
   MPI_Finalize();
 
   return 0;
