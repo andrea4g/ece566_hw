@@ -1,26 +1,18 @@
-rank: 0, cord: [0][0][0], 0, 1
-rank: 1, cord: [0][0][1], 2, 3
-rank: 2, cord: [0][1][0], 4, 5
-rank: 3, cord: [0][1][1], 6, 7
-rank: 4, cord: [1][0][0], 8, 9
-rank: 5, cord: [1][0][1], 10, 11
-rank: 6, cord: [1][1][0], 12, 13
-rank: 7, cord: [1][1][1], 14, 15
-res[0] = 1
-res[1] = 5
-res[2] = 9
-res[3] = 13
-res[4] = 17
-res[5] = 21
-res[6] = 25
-res[7] = 29
-res[8] = 0
-res[9] = 0
-res[10] = 0
-res[11] = 0
-res[12] = 0
-res[13] = 0
-res[14] = 0
-res[15] = 0
-Sum: 120
+Proc: 9, time: 0.031863
+Proc: 11, time: 0.042763
+Proc: 5, time: 0.042880
+Proc: 15, time: 0.042912
+Proc: 3, time: 0.042930
+Proc: 7, time: 0.043072
+Proc: 1, time: 0.043250
+Proc: 13, time: 0.032515
+Proc: 2, time: 0.043616
+Proc: 14, time: 0.043720
+Proc: 4, time: 0.032816
+Proc: 6, time: 0.043750
+Proc: 10, time: 0.043828
+Sum: 534822912
+Proc: 0, time: 0.043953
+Proc: 8, time: 0.043973
+Proc: 12, time: 0.043971
 Job complete

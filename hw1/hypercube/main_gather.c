@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-#define P 16
-#define N 32
+#define P 8
+#define N 128 
 #define D 3
 
 int main(int argc, char** argv) {

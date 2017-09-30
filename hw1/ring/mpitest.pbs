@@ -5,7 +5,7 @@
 
 #PBS -e mpitest.err
 #PBS -o mpitest.out
-#PBS -d /export/home/agualc2/ece566_hw/hw1/ring
+#PBS -d /export/home/acipol2/ece566_hw/hw1/ring
 
 module load tools/mpich2-1.5-gcc
 
