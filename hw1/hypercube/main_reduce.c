@@ -5,7 +5,7 @@
 int main(int argc, char** argv) {
 
   MPI_Comm hc_comm;
-  int d;
+  unsigned int d;
   int* dim;
   int* period;
   int reorder = 1;
@@ -14,13 +14,13 @@ int main(int argc, char** argv) {
   int rank;
   int* data;
   int* partial_data;
-  int card_partial_data;
+  unsigned int card_partial_data;
   int i;
   int result;
   int partial_sum;
   double final_time, initial_time;
   char flag;
-  int n;
+  unsigned int n;
   unsigned int temp;
   int* root_cord;
   int root_rank;
@@ -41,7 +41,7 @@ int main(int argc, char** argv) {
     d++;
     temp = temp >> 1;
   } 
-  //printf("%d\n", d);
+  printf("%d\n", n);
 
   dim = (int* ) malloc(d*sizeof(int));
   root_cord = (int* ) malloc(d*sizeof(int));
