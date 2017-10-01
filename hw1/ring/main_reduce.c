@@ -52,7 +52,6 @@ int main(int argc, char** argv) {
   MPI_Cart_rank(ring_comm,&root_cord,&root_rank);
   MPI_Scatter(data, card_partial_data, MPI_INT, partial_data, card_partial_data, MPI_INT,root_rank,ring_comm);
 
-  printf("After scatter\n");
   for ( i = 0 ; i < card_partial_data; i++ )
     partial_sum += partial_data[i];
 

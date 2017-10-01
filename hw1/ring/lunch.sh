@@ -1,5 +1,9 @@
 #!/bin/bash
 
+filename= ls *.pbs
+
+
+
 if [  -f ./mpitest.out ]; then
   rm ./mpitest.out
 fi

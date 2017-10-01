@@ -34,14 +34,12 @@ int main(int argc, char** argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
   
   card_partial_data = n/world_size;
-  printf("%d\n", card_partial_data);
   d = 0;
   temp = world_size;
   while ( !(temp & 0x01) ) {
     d++;
     temp = temp >> 1;
   } 
-  printf("%d\n", n);
 
   dim = (int* ) malloc(d*sizeof(int));
   root_cord = (int* ) malloc(d*sizeof(int));
@@ -49,7 +47,6 @@ int main(int argc, char** argv) {
   period = (int* ) malloc(d*sizeof(int));
   partial_data = (int* ) malloc(card_partial_data*sizeof(int));
 
-  printf("%x\n", partial_data);
 
   for ( i = 0; i < d; i++ ) {
     dim[i] = 2;
@@ -79,10 +76,8 @@ int main(int argc, char** argv) {
 
   MPI_Cart_rank(hc_comm,root_cord,&root_rank);
 
-  printf("%d\n",root_rank);
   MPI_Scatter(data, card_partial_data, MPI_INT, partial_data, card_partial_data, MPI_INT, root_rank, hc_comm);
 
-  printf("ciaoneeee\n");
 
   partial_sum = 0;
   for ( i = 0 ; i < card_partial_data; i++ )
@@ -94,7 +89,7 @@ int main(int argc, char** argv) {
     printf("Sum: %d\n", result);
 
   final_time = MPI_Wtime();
-  printf("Proc: %d, time: %f\n", rank, final_time-initial_time);
+  printf("Proc: %d, %f\n", rank, final_time-initial_time);
 
   free(dim);
   free(root_cord);
