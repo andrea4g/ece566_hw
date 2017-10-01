@@ -38,8 +38,6 @@ int main(int argc, char** argv) {
   // save the number of elements to send to each processor
   card_partial_data = n / k;
 
-  // allocate the data of the starting array (sender buffer)
-  data = (int*) malloc(n * sizeof(int));
   // allocate the data of the receiver buffer of the scatter
   partial_data = (int*) malloc(card_partial_data * sizeof(int));
   // allocate the data of the receiver buffer of the gather
@@ -52,6 +50,8 @@ int main(int argc, char** argv) {
 
   // if it is the source processor
   if (cord == 0) {
+    // allocate the data of the starting array (sender buffer)
+    data = (int*) malloc(n * sizeof(int));
     // declare the seed
     srand(NULL);
     // fill the array data with random numbers
@@ -91,7 +91,9 @@ int main(int argc, char** argv) {
   printf("Proc: %d, %f\n", cord, final_time - initial_time);
 
   // free the memory allocated with the malloc
-  free(data);
+  if (cord == 0) {
+    free(data);
+  }
   free(partial_data);
   free(result);
 
