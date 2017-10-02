@@ -1,18 +1,15 @@
 mpitest_1_16_640000.out
-Av_time: 0.000510 ,deviation: 0.000000
+Av_time: 0.000692 ,dev: 0.001762
 Job complete
 mpitest_1_4_160000.out
-Av_time: 0.000173 ,deviation: 0.000000
+Av_time: 0.000361 ,dev: 0.001842
 Job complete
 mpitest_1_8_320000.out
-Av_time: 0.000313 ,deviation: 0.000000
+Av_time: 0.000273 ,dev: 0.000001
 Job complete
 mpitest_2_16_1280000.out
-Av_time: 0.015893 ,deviation: 0.000162
+Av_time: 0.007304 ,dev: 1.253834
 Job complete
 mpitest_4_16_2560000.out
-Av_time: 0.023941 ,deviation: 0.000373
-Job complete
-mpitest.out
-Av_time: 0.010176 ,deviation: 0.000103
+Av_time: 0.023002 ,dev: 4.825023
 Job complete
