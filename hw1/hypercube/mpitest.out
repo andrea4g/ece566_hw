@@ -1,18 +1,32 @@
-Proc: 13, time: 3.249233
-Proc: 15, time: 3.249507
-Proc: 7, time: 3.249484
-Proc: 5, time: 3.257287
-Proc: 3, time: 3.262956
-Proc: 9, time: 3.263622
-Proc: 11, time: 3.263784
-Proc: 1, time: 3.271070
-Proc: 12, time: 3.285069
-Proc: 14, time: 3.285085
-Proc: 6, time: 3.285237
-Proc: 4, time: 3.292668
-Proc: 10, time: 3.296454
-Proc: 2, time: 3.297576
-Proc: 8, time: 3.299359
-Sum: 230957034
-Proc: 0, time: 3.304860
+processor = 0
+proc 0 -- partial data[i] = 0
+proc 0 -- partial data[i] = 1
+processor = 1
+proc 1 -- partial data[i] = 2
+proc 1 -- partial data[i] = 3
+Proc: 1, time: 0.000097
+processor = 2
+proc 2 -- partial data[i] = 4
+proc 2 -- partial data[i] = 5
+Proc: 2, time: 0.000087
+processor = 3
+proc 3 -- partial data[i] = 6
+proc 3 -- partial data[i] = 7
+Proc: 3, time: 0.000093
+processor = 4
+proc 4 -- partial data[i] = 8
+proc 4 -- partial data[i] = 9
+Proc: 4, time: 0.000093
+processor = 5
+proc 5 -- partial data[i] = 10
+proc 5 -- partial data[i] = 11
+Proc: 5, time: 0.000091
+processor = 6
+proc 6 -- partial data[i] = 12
+proc 6 -- partial data[i] = 13
+Proc: 6, time: 0.000089
+processor = 7
+proc 7 -- partial data[i] = 14
+proc 7 -- partial data[i] = 15
+Proc: 7, time: 0.000091
 Job complete
