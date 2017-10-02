@@ -85,8 +85,8 @@ int main(int argc, char** argv) {
     srand(NULL);
     // fill data with random values
     for (i = 0; i < n; i++) {
-      //data[i] = rand();
-      data[i] = i;
+      data[i] = rand();
+      //data[i] = i;
       //printf("data[i] = %d\n", data[i]);
     }
   }
@@ -152,12 +152,12 @@ int main(int argc, char** argv) {
   printf("Proc: %d, time: %f\n", rank, final_time-initial_time);
 
   // free the dynamic memory allocated
+  free(cord);
   free(data);
   free(dim);
-  free(root_cord);
-  free(cord);
-  free(period);
   free(partial_data);
+  free(period);
+  free(root_cord);
 
   // close the MPI environment
   MPI_Finalize();
