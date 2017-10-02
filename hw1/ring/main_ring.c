@@ -6,6 +6,8 @@
 int main(int argc, char** argv) {
 
   MPI_Comm ring_comm;
+  int mask;
+  int mailbox;
   int period = 1;
   int reorder = 1;
   int cord;
@@ -43,7 +45,6 @@ int main(int argc, char** argv) {
   while ( (1 << number_of_steps) < k ) {
     number_of_steps++;
   }  
-  printf("%d\n",number_of_steps);
   
   data = (int *)malloc(n*sizeof(int));
   if ( my_cord == 0 ) {
@@ -58,13 +59,11 @@ int main(int argc, char** argv) {
     if ( (my_cord & sender_mask) == 0 ) {
       dest_cord = (1 << (number_of_steps - i - 1))^my_cord; 
       MPI_Cart_rank(ring_comm,&dest_cord,&dest_rank);
-      printf("Proc: %d send to %d from %d to %d\n",my_cord,dest_cord,new_edge,edge-1); 
       error_value = 
         MPI_Send(&data[new_edge], edge - new_edge , MPI_INT, dest_cord, 0,ring_comm);
     }
     if (((my_cord & (sender_mask >> 1)) == 0) && (( (my_cord >> (number_of_steps - 1 - i )) & 0x01) == 1 )) {
       source_cord = my_cord^(1 << (number_of_steps - 1 - i));
-      printf("Proc: %d rcv from %d\n",my_cord,source_cord); 
       error_value = 
         MPI_Recv(data, edge - new_edge, MPI_INT, source_cord, 0,ring_comm, &status);
     }
@@ -74,10 +73,34 @@ int main(int argc, char** argv) {
     sender_mask = sender_mask >> 1;
   } 
  
+  partial_sum = 0;
+  for ( i = 0; i < edge - new_edge; i++ )
+    partial_sum += data[i];
+
 
   MPI_Cart_rank(ring_comm,&root_cord,&root_rank);
   
-  
+  mask = 0;
+  for ( i = 0; i < number_of_steps; i++ ) {
+    if ( (my_cord & mask) == 0 ) {
+      if ( (my_cord & (1 << i)) != 0 ) {
+        dest_cord = my_cord ^ ( 1 << i );
+        MPI_Send(&partial_sum,1,MPI_INT,dest_cord,0,ring_comm);     
+      } else {
+        source_cord = my_cord ^ ( 1 << i );
+        MPI_Recv(&mailbox, 1,MPI_INT,source_cord,0, ring_comm, &status);
+        partial_sum += mailbox;
+      }
+      mask = mask ^ (1 << i);
+    } 
+  }
+
+
+  if ( my_cord == 0 ) {
+    printf("%d\n", partial_sum);
+  }
+
+
   MPI_Finalize();
 
   return 0;
