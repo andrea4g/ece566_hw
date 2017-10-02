@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-#define N_ITERATIONS 100
+#define N_ITERATIONS 1000
 #define DEBUG 0
 
 
