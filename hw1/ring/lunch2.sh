@@ -1,8 +1,8 @@
 #!/bin/bash
 
-filename="$(ls *.pbs)"
+filename="$(ls test_*)"
 
 for file in $filename; do
-  qsub $file
+  echo $file
 done
 
