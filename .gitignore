@@ -1,0 +1,15 @@
+# ignore all
+*
+hw1/ring/ringtest
+hw1/ring/*.err
+hw1/ring/*.out
+hw1/hypercube/hctest
+hw1/hypercube/*.err
+hw1/hypercube/*.out
+
+# except these files
+!.gitignore
+!*.c
+!*.txt
+!*.pbs
+!*.sh
