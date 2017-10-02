@@ -1,0 +1,7 @@
+# ignore all
+*
+# except these files
+!.gitignore
+!*.c
+!*.txt
+!*.pbs
