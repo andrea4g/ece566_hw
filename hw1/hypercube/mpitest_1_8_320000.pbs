@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l nodes=1:ppn=8,walltime=1:00 
+#PBS -N hctestJob
+#PBS -q edu_shared
+
+#PBS -e mpitest_1_8_320000.err
+#PBS -o mpitest_1_8_320000.out
+#PBS -d /export/home/acipol2/ece566_hw/hw1/hypercube
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP  ./hctest 320000

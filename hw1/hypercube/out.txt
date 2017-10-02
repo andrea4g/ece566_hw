@@ -1,10 +1,15 @@
-YOU
-YOU
-YOU
-YOU
-YOU
-YOU
-YOU
-YOU
-YOU
-YOU
+mpitest_1_16_640000.out
+Av_time: 0.000501 ,dev: 0.000003
+Job complete
+mpitest_1_4_160000.out
+Av_time: 0.000177 ,dev: 0.000000
+Job complete
+mpitest_1_8_320000.out
+Av_time: 0.000250 ,dev: 0.000001
+Job complete
+mpitest_2_16_1280000.out
+Av_time: 0.021315 ,dev: 0.375073
+Job complete
+mpitest_4_16_2560000.out
+Av_time: 0.011173 ,dev: 0.149754
+Job complete

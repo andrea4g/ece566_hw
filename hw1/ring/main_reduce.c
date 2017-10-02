@@ -2,93 +2,138 @@
 #include <stdlib.h>
 #include <mpi.h>
 
+#define N_ITERATIONS 1000
+#define DEBUG 0
+
+
 int main(int argc, char** argv) {
 
-  // Communicator declaration
+  // variable declaration
   MPI_Comm ring_comm;
-  // variable declarations
-  int period = 1;
   int reorder = 1;
-  int cord;
-  int k;
-  int rank;
-  int n;
-  int card_partial_data;
-  int i;
-  int root_cord,root_rank;
-  int result;
-  int partial_sum = 0;
-  // poiner declarations
+  int root_rank,root_cord;
+  int n,k;
+  int my_rank;
+  int i,iteration;
+  int result,partial_sum;
+  int card_partial_data,reminder;
+  double time_vector[N_ITERATIONS],deviation;
+  double average_time, final_time, initial_time;
+  // pointer declaration
+  int period = 1;
+  int my_cord;
   int* data;
   int* partial_data;
-  double initial_time, final_time;
+  int* sendcounts;
+  int* displs;
 
-  // save the number of elements of the array
+  // save in n the length of the array
   n = atoi(argv[1]);
-  // inizialization of MPI environment
-  MPI_Init(&argc,&argv);
-  // save the start time of the task
-  initial_time = MPI_Wtime();
-  // save in k the size of the virtual topology (#processors)
+
+  // Initialize MPI environment
+  MPI_Init(&argc, &argv);
+  // save the number of processors
   MPI_Comm_size(MPI_COMM_WORLD, &k);
-  // create the topology (1 dimension, k processors in the dimension,
-  // wraparound yes, reorder yes)
-  MPI_Cart_create(MPI_COMM_WORLD, 1, &k, &period, reorder, &ring_comm);
-  // save the number of elements to send to each processor
+  // save the number of elements that have to be delivered to each processor
   card_partial_data = n / k;
+  reminder = n % k;
 
-  // allocate the data of the receiver buffer
-  partial_data = (int*) malloc(card_partial_data * sizeof(int));
+  // create a virtual topology for the ring of k-elements
+  MPI_Cart_create(MPI_COMM_WORLD, 1, &k, &period, reorder, &ring_comm);
+  // save the rank of each processor in rank
+  MPI_Comm_rank(ring_comm, &my_rank);
+  // save the coordinates of each given the rank of the processor
+  MPI_Cart_coords(ring_comm, my_rank, 1, &my_cord);
 
-  // save in rank the rank of each processor (assigned with MPI_Cart_create)
-  MPI_Comm_rank(ring_comm, &rank);
-  // save in cord the coordinates given a rank
-  MPI_Cart_coords(ring_comm, rank, 1, &cord);
-
-  // if it is the source processor
-  if (cord == 0) {
-    // allocate the data of the starting array (sender buffer)
+  root_cord = 0;
+  // if it is the root processor
+  if ( my_cord == root_cord) {
+    // allocate the data
     data = (int*) malloc(n * sizeof(int));
     // declare the seed
-    srand(NULL);
-    // fill the array data with random numbers
+    srand((unsigned int) 0);
+  #if DEBUG
+    // fill data with consecutive values
+    for (i = 0; i < n; i++) {
+      data[i] = i;
+    }
+  #else
+    // fill data with random values
     for (i = 0; i < n; i++) {
       data[i] = rand();
     }
+  #endif
   }
-  // initialize root_cord
-  root_cord = 0;
-  // given the root_cord, save in root_rank the rank (save in root_rank the
-  // rank of the root processor)
+
+  // get the rank of each processor in the topology
   MPI_Cart_rank(ring_comm, &root_cord, &root_rank);
-  // send the data with a one-to-all personalized broadcast communication
-  // the root send n/k elements to each i-th processor
-  MPI_Scatter(data, card_partial_data, MPI_INT, partial_data, card_partial_data, MPI_INT,root_rank,ring_comm);
+  
+  // Allocate vectors for SCATTERV primitive
+  sendcounts = (int*) malloc(k*sizeof(int));
+  displs = (int*) malloc(k*sizeof(int));
+  // Assign to the root the reminder
+  sendcounts[root_rank] = reminder + card_partial_data;
+  displs[root_rank] = 0;
+  for ( i = root_rank + 1; i < k; i++ ) {
+    sendcounts[i] = card_partial_data;
+    displs[i] = (reminder) + (i-root_rank)*card_partial_data;
+  }
+  for ( i = 0; i < root_rank; i++ ) {
+    sendcounts[i] = card_partial_data;
+    displs[i] = (reminder) + (k - root_rank + i)*card_partial_data;
+  }
+  if ( my_rank == root_rank ) {
+    partial_data = (int*) malloc((card_partial_data+reminder) * sizeof(int));
+  } else {
+    partial_data = (int*) malloc(card_partial_data * sizeof(int));
+  }
 
-  // sum the data received with the scatter
-  for (i = 0 ; i < card_partial_data; i++)
-    partial_sum += partial_data[i];
+  average_time = 0;
+  for ( iteration = 0; iteration < N_ITERATIONS; iteration++ ) {
+    // save initial time of the task
+    initial_time = MPI_Wtime();
+    // scatter the data from source to all the processors
+    MPI_Scatterv(data, sendcounts, displs, MPI_INT, partial_data, sendcounts[my_rank], MPI_INT, root_rank, ring_comm);
+    // initialize the partial sum of each processor
+    partial_sum = 0;
+    // compute the sum of all the values received with the scatter
+    for ( i = 0 ; i < sendcounts[my_rank]; i++ )
+      partial_sum += partial_data[i];
+    // apply reduce operation (MPI_SUM) on the root processor
+    MPI_Reduce(&partial_sum, &result, 1, MPI_INT, MPI_SUM, root_rank, ring_comm); 
+      
+    // save final time of the task
+    final_time = MPI_Wtime();
+    if ( my_rank == root_rank) {
+    #if DEBUG
+      printf("Sum: %d\n", result);
+    #endif
+      // and free the data array dinamically allocated
+    }
+    time_vector[iteration] = final_time - initial_time;
+    average_time += time_vector[iteration];
+  }
+  average_time = average_time/N_ITERATIONS;
 
-  // apply reduce operation on the root node and save the sum in result
-  MPI_Reduce(&partial_sum, &result, 1, MPI_INT, MPI_SUM, root_rank, ring_comm);
 
-  // if it is the root processor
-  if (cord == 0)
-    printf("Sum: %d\n", result);
 
-  // save final time
-  final_time = MPI_Wtime();
-  // print coordinates of each processor and the time it took to complete the task
-  printf("Proc: %d, %f\n", cord, final_time - initial_time);
 
-  // free the memory allocated with the malloc
-  if (cord == 0) {
+  if ( my_rank == root_rank ) {
+    deviation = 0;
+    for ( i = 0; i < N_ITERATIONS; i++ ) {
+      deviation += (time_vector[i] - average_time)*(time_vector[i] - average_time);
+    }
+    // compute and print the rank of the processor and the time it took to complete the task
+    printf("Av_time: %f ,dev: %f\n", average_time, deviation);
     free(data);
   }
+
+  // free the dynamic memory allocated
   free(partial_data);
 
-  // terminate the MPI environment execution
+  // close the MPI environment
   MPI_Finalize();
 
   return 0;
+
 }
