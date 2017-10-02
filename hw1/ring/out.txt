@@ -1,10 +1,18 @@
-4.764107
-4.674595
-4.633375
-4.665056
-4.796520
-4.670511
-4.658937
-4.671766
-4.662522
-4.670629
+mpitest_1_16_640000.out
+Av_time: 0.000510 ,deviation: 0.000000
+Job complete
+mpitest_1_4_160000.out
+Av_time: 0.000173 ,deviation: 0.000000
+Job complete
+mpitest_1_8_320000.out
+Av_time: 0.000313 ,deviation: 0.000000
+Job complete
+mpitest_2_16_1280000.out
+Av_time: 0.015893 ,deviation: 0.000162
+Job complete
+mpitest_4_16_2560000.out
+Av_time: 0.023941 ,deviation: 0.000373
+Job complete
+mpitest.out
+Av_time: 0.010176 ,deviation: 0.000103
+Job complete
