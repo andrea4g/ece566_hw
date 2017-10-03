@@ -102,7 +102,7 @@ int main(int argc, char** argv) {
     for ( i = 0 ; i < sendcounts[my_rank]; i++ )
       partial_sum += partial_data[i];
     // apply reduce operation (MPI_SUM) on the root processor
-    MPI_Gather(&partial_sum, 1, MPI_INT, root_partial_sum, 1, MPI_INT, 0, ring_comm);
+    MPI_Gather(&partial_sum, 1, MPI_INT, root_partial_sum, 1, MPI_INT, root_rank, ring_comm);
 
     if ( my_rank == root_rank) {
       result = 0;
