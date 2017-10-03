@@ -1,266 +1,1002 @@
-processor = 0
-proc 0 -- partial data[i] = 0
-proc 0 -- partial data[i] = 1
-proc 0 -- partial data[i] = 2
-proc 0 -- partial data[i] = 3
-proc 0 -- partial data[i] = 4
-proc 0 -- partial data[i] = 5
-proc 0 -- partial data[i] = 6
-proc 0 -- partial data[i] = 7
-proc 0 -- partial data[i] = 8
-proc 0 -- partial data[i] = 9
-proc 0 -- partial data[i] = 10
-proc 0 -- partial data[i] = 11
-proc 0 -- partial data[i] = 12
-proc 0 -- partial data[i] = 13
-proc 0 -- partial data[i] = 14
-proc 0 -- partial data[i] = 15
-proc 0 -- partial data[i] = 16
-proc 0 -- partial data[i] = 17
-proc 0 -- partial data[i] = 18
-proc 0 -- partial data[i] = 19
-proc 0 -- partial data[i] = 20
-proc 0 -- partial data[i] = 21
-proc 0 -- partial data[i] = 22
-proc 0 -- partial data[i] = 23
-proc 0 -- partial data[i] = 24
-proc 0 -- partial data[i] = 25
-proc 0 -- partial data[i] = 26
-proc 0 -- partial data[i] = 27
-proc 0 -- partial data[i] = 28
-proc 0 -- partial data[i] = 29
-proc 0 -- partial data[i] = 30
-proc 0 -- partial data[i] = 31
-proc 0 -- partial data[i] = 32
-proc 0 -- partial data[i] = 33
-proc 0 -- partial data[i] = 34
-proc 0 -- partial data[i] = 35
-proc 0 -- partial data[i] = 36
-proc 0 -- partial data[i] = 37
-proc 0 -- partial data[i] = 38
-proc 0 -- partial data[i] = 39
-proc 0 -- partial data[i] = 40
-processor = 1
-proc 1 -- partial data[i] = 64
-proc 1 -- partial data[i] = 65
-proc 1 -- partial data[i] = 66
-proc 1 -- partial data[i] = 67
-proc 1 -- partial data[i] = 68
-proc 1 -- partial data[i] = 69
-proc 1 -- partial data[i] = 70
-proc 1 -- partial data[i] = 71
-proc 1 -- partial data[i] = 72
-proc 1 -- partial data[i] = 73
-proc 1 -- partial data[i] = 74
-proc 1 -- partial data[i] = 75
-proc 1 -- partial data[i] = 76
-proc 1 -- partial data[i] = 77
-proc 1 -- partial data[i] = 78
-proc 1 -- partial data[i] = 79
-proc 1 -- partial data[i] = 80
-proc 1 -- partial data[i] = 81
-proc 1 -- partial data[i] = 82
-proc 1 -- partial data[i] = 83
-proc 1 -- partial data[i] = 84
-proc 1 -- partial data[i] = 85
-proc 1 -- partial data[i] = 86
-proc 1 -- partial data[i] = 87
-proc 1 -- partial data[i] = 88
-proc 1 -- partial data[i] = 89
-proc 1 -- partial data[i] = 90
-proc 1 -- partial data[i] = 91
-proc 1 -- partial data[i] = 92
-proc 1 -- partial data[i] = 93
-proc 1 -- partial data[i] = 94
-proc 1 -- partial data[i] = 95
-proc 1 -- partial data[i] = 96
-proc 1 -- partial data[i] = 97
-proc 1 -- partial data[i] = 98
-proc 1 -- partial data[i] = 99
-proc 1 -- partial data[i] = 100
-proc 1 -- partial data[i] = 101
-proc 1 -- partial data[i] = 102
-proc 1 -- partial data[i] = 103
-proc 1 -- partial data[i] = 104
-proc 1 -- partial data[i] = 105
-proc 1 -- partial data[i] = 106
-proc 1 -- partial data[i] = 107
-proc 1 -- partial data[i] = 108
-proc 1 -- partial data[i] = 109
-proc 1 -- partial data[i] = 110
-proc 1 -- partial data[i] = 111
-proc 1 -- partial data[i] = 112
-proc 1 -- partial data[i] = 113
-proc 1 -- partial data[i] = 114
-proc 1 -- partial data[i] = 115
-proc 1 -- partial data[i] = 116
-proc 1 -- partial data[i] = 117
-proc 1 -- partial data[i] = 118
-proc 1 -- partial data[i] = 119
-proc 1 -- partial data[i] = 120
-proc 1 -- partial data[i] = 121
-proc 1 -- partial data[i] = 122
-proc 1 -- partial data[i] = 123
-proc 1 -- partial data[i] = 124
-proc 1 -- partial data[i] = 125
-proc 1 -- partial data[i] = 126
-processor = 2
-proc 2 -- partial data[i] = 128
-proc 2 -- partial data[i] = 129
-proc 2 -- partial data[i] = 130
-proc 2 -- partial data[i] = 131
-proc 2 -- partial data[i] = 132
-proc 2 -- partial data[i] = 133
-proc 2 -- partial data[i] = 134
-proc 2 -- partial data[i] = 135
-proc 2 -- partial data[i] = 136
-proc 2 -- partial data[i] = 137
-proc 2 -- partial data[i] = 138
-proc 2 -- partial data[i] = 139
-proc 2 -- partial data[i] = 140
-proc 2 -- partial data[i] = 141
-proc 2 -- partial data[i] = 142
-proc 2 -- partial data[i] = 143
-proc 2 -- partial data[i] = 144
-proc 2 -- partial data[i] = 145
-proc 2 -- partial data[i] = 146
-proc 2 -- partial data[i] = 147
-proc 2 -- partial data[i] = 148
-proc 2 -- partial data[i] = 149
-proc 2 -- partial data[i] = 150
-proc 2 -- partial data[i] = 151
-proc 2 -- partial data[i] = 152
-proc 2 -- partial data[i] = 153
-proc 2 -- partial data[i] = 154
-proc 2 -- partial data[i] = 155
-proc 2 -- partial data[i] = 156
-proc 2 -- partial data[i] = 157
-proc 2 -- partial data[i] = 158
-proc 2 -- partial data[i] = 159
-proc 2 -- partial data[i] = 160
-proc 2 -- partial data[i] = 161
-proc 2 -- partial data[i] = 162
-proc 2 -- partial data[i] = 163
-proc 2 -- partial data[i] = 164
-proc 2 -- partial data[i] = 165
-proc 2 -- partial data[i] = 166
-proc 2 -- partial data[i] = 167
-proc 2 -- partial data[i] = 168
-proc 2 -- partial data[i] = 169
-proc 2 -- partial data[i] = 170
-proc 2 -- partial data[i] = 171
-proc 2 -- partial data[i] = 172
-proc 2 -- partial data[i] = 173
-proc 2 -- partial data[i] = 174
-proc 2 -- partial data[i] = 175
-proc 2 -- partial data[i] = 176
-proc 2 -- partial data[i] = 177
-proc 2 -- partial data[i] = 178
-proc 2 -- partial data[i] = 179
-proc 2 -- partial data[i] = 180
-proc 2 -- partial data[i] = 181
-proc 2 -- partial data[i] = 182
-proc 2 -- partial data[i] = 183
-proc 2 -- partial data[i] = 184
-proc 2 -- partial data[i] = 185
-proc 2 -- partial data[i] = 186
-proc 2 -- partial data[i] = 187
-proc 2 -- partial data[i] = 188
-proc 2 -- partial data[i] = 189
-proc 2 -- partial data[i] = 190
-proc 2 -- partial data[i] = 191
-processor = 3
-proc 3 -- partial data[i] = 192
-proc 3 -- partial data[i] = 193
-proc 3 -- partial data[i] = 194
-proc 3 -- partial data[i] = 195
-proc 3 -- partial data[i] = 196
-proc 3 -- partial data[i] = 197
-proc 3 -- partial data[i] = 198
-proc 3 -- partial data[i] = 199
-proc 3 -- partial data[i] = 200
-proc 3 -- partial data[i] = 201
-proc 3 -- partial data[i] = 202
-proc 3 -- partial data[i] = 203
-proc 3 -- partial data[i] = 204
-proc 3 -- partial data[i] = 205
-proc 3 -- partial data[i] = 206
-proc 3 -- partial data[i] = 207
-proc 3 -- partial data[i] = 208
-proc 3 -- partial data[i] = 209
-proc 3 -- partial data[i] = 210
-proc 3 -- partial data[i] = 211
-proc 3 -- partial data[i] = 212
-proc 3 -- partial data[i] = 213
-proc 3 -- partial data[i] = 214
-proc 3 -- partial data[i] = 215
-proc 3 -- partial data[i] = 216
-proc 3 -- partial data[i] = 217
-proc 3 -- partial data[i] = 218
-proc 3 -- partial data[i] = 219
-proc 3 -- partial data[i] = 220
-proc 3 -- partial data[i] = 221
-proc 3 -- partial data[i] = 222
-proc 3 -- partial data[i] = 223
-proc 3 -- partial data[i] = 224
-proc 3 -- partial data[i] = 225
-proc 3 -- partial data[i] = 226
-proc 3 -- partial data[i] = 227
-proc 3 -- partial data[i] = 228
-proc 3 -- partial data[i] = 229
-proc 3 -- partial data[i] = 230
-proc 3 -- partial data[i] = 231
-proc 3 -- partial data[i] = 232
-proc 3 -- partial data[i] = 233
-proc 3 -- partial data[i] = 234
-proc 3 -- partial data[i] = 235
-proc 3 -- partial data[i] = 236
-proc 3 -- partial data[i] = 237
-proc 3 -- partial data[i] = 238
-proc 3 -- partial data[i] = 239
-proc 3 -- partial data[i] = 240
-proc 3 -- partial data[i] = 241
-proc 3 -- partial data[i] = 242
-proc 3 -- partial data[i] = 243
-proc 3 -- partial data[i] = 244
-proc 3 -- partial data[i] = 245
-proc 3 -- partial data[i] = 246
-proc 3 -- partial data[i] = 247
-proc 3 -- partial data[i] = 248
-proc 3 -- partial data[i] = 249
-proc 3 -- partial data[i] = 250
-proc 3 -- partial data[i] = 251
-proc 3 -- partial data[i] = 252
-proc 3 -- partial data[i] = 253
-proc 3 -- partial data[i] = 254
-proc 3 -- partial data[i] = 255
-proc 0 -- partial data[i] = 41
-proc 0 -- partial data[i] = 42
-proc 0 -- partial data[i] = 43
-proc 0 -- partial data[i] = 44
-proc 0 -- partial data[i] = 45
-proc 0 -- partial data[i] = 46
-proc 0 -- partial data[i] = 47
-proc 0 -- partial data[i] = 48
-proc 0 -- partial data[i] = 49
-proc 0 -- partial data[i] = 50
-proc 0 -- partial data[i] = 51
-proc 0 -- partial data[i] = 52
-proc 0 -- partial data[i] = 53
-proc 0 -- partial data[i] = 54
-proc 0 -- partial data[i] = 55
-proc 0 -- partial data[i] = 56
-proc 0 -- partial data[i] = 57
-proc 0 -- partial data[i] = 58
-proc 0 -- partial data[i] = 59
-proc 0 -- partial data[i] = 60
-proc 0 -- partial data[i] = 61
-proc 0 -- partial data[i] = 62
-proc 0 -- partial data[i] = 63
-Sum: 32640
-Proc: 0, time: 0.000135
-proc 1 -- partial data[i] = 127
-Proc: 1, time: 0.000130
-Proc: 2, time: 0.000131
-Proc: 3, time: 0.000131
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Sum: 140457180
+Av_time: 0.000024 ,dev: 0.000004
 Job complete
