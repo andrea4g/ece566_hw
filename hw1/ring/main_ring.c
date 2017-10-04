@@ -6,14 +6,11 @@
 int main(int argc, char** argv) {
 
   MPI_Comm ring_comm;
-  int mask;
   int mailbox;
   int period = 1;
   int reorder = 1;
-  int cord;
-  int k;
-  int rank;
-  int n;
+  int my_rank, my_cord;
+  int k,n;
   int* data;
   int* partial_data;
   int card_partial_data;
@@ -22,7 +19,6 @@ int main(int argc, char** argv) {
   int result;
   int partial_sum = 0;
   double initial_time, final_time;
-  int my_cord,sender_mask,number_of_steps,new_edge,edge;
   int dest_cord,dest_rank,error_value,source_cord;
   int temp;
   MPI_Status status;
@@ -51,49 +47,37 @@ int main(int argc, char** argv) {
     for ( i = 0; i < n; i++ )
       data[i] = i;
   }
- 
-  edge = n;
-  sender_mask = (1 << number_of_steps) - 1;        // mask = 11...11_ceil(log2(k))
-  for ( i = 0; i < number_of_steps; i++ ) {
-    new_edge = edge >> 1;
-    if ( (my_cord & sender_mask) == 0 ) {
-      dest_cord = (1 << (number_of_steps - i - 1))^my_cord; 
-      MPI_Cart_rank(ring_comm,&dest_cord,&dest_rank);
-      error_value = 
-        MPI_Send(&data[new_edge], edge - new_edge , MPI_INT, dest_cord, 0,ring_comm);
-    }
-    if (((my_cord & (sender_mask >> 1)) == 0) && (( (my_cord >> (number_of_steps - 1 - i )) & 0x01) == 1 )) {
-      source_cord = my_cord^(1 << (number_of_steps - 1 - i));
-      error_value = 
-        MPI_Recv(data, edge - new_edge, MPI_INT, source_cord, 0,ring_comm, &status);
-    }
-    if ( i != number_of_steps - 1) {
-      edge = new_edge;
-    }
-    sender_mask = sender_mask >> 1;
-  } 
- 
-  partial_sum = 0;
-  for ( i = 0; i < edge - new_edge; i++ )
-    partial_sum += data[i];
 
+
+  if ( my_coord == 0 ) {
+    MPI_Cart_shift(ring_comm, 0, 1, &my_rank, &dest_rank);
+    MPI_Send(&data[card_partial_data + reminder], 
+        (k-1)*card_partial_data, MPI_INT, dest_rank, 0, ring_comm);
+    partial_sum = 0;
+    for ( i = 0 ; i < card_partial_data + reminder; i++ ) {
+      partial_sum += data[i];
+    }
+  } else {
+    MPI_Cart_shift(ring_comm, 0, -1, &my_rank, &src_rank);
+    MPI_Recv(partial_data, 
+        (k-my_coord)*card_partial_data, MPI_INT, src_rank, 0, ring_comm, &status);
+    if ( my_coord < k ) {
+      MPI_Send(&partial_data[card_partial_data], 
+          (k - my_cord - 1)*card_partial_data, MPI_INT, dest_rank, 0, ring_comm);
+    }
+    partial_sum = 0;
+    for ( i = 0 ; i < card_partial_data; i++ ) {
+      partial_sum += partial_data[i];
+    }
+  }
 
   MPI_Cart_rank(ring_comm,&root_cord,&root_rank);
-  
-  mask = 0;
-  for ( i = 0; i < number_of_steps; i++ ) {
-    if ( (my_cord & mask) == 0 ) {
-      if ( (my_cord & (1 << i)) != 0 ) {
-        dest_cord = my_cord ^ ( 1 << i );
-        MPI_Send(&partial_sum,1,MPI_INT,dest_cord,0,ring_comm);     
-      } else {
-        source_cord = my_cord ^ ( 1 << i );
-        MPI_Recv(&mailbox, 1,MPI_INT,source_cord,0, ring_comm, &status);
-        partial_sum += mailbox;
-      }
-      mask = mask ^ (1 << i);
-    } 
+
+  if ( my_rank != 0 && my_rank < N/2 ) {
+    
   }
+
+
 
 
   if ( my_cord == 0 ) {
