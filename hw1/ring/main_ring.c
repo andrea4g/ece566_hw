@@ -73,12 +73,28 @@ int main(int argc, char** argv) {
 
   MPI_Cart_rank(ring_comm,&root_cord,&root_rank);
 
-  if ( my_rank != 0 && my_rank < N/2 ) {
-    
+  if ( my_cord == N/2 ) {
+    MPI_Cart_shift(ring_comm, 0, -1, &my_rank, &dest_rank);
+    MPI_Send(&partial_sum, 1, MPI_INT, dest_rank, 0, ring_comm);
+  } else if ( my_cord == N/2 + 1) {
+    MPI_Cart_shift(ring_comm, 0, +1, &my_rank, &dest_rank);
+    MPI_Send(&partial_sum, 1, MPI_INT, dest_rank, 0, ring_comm);
+  } else if ( my_cord == 0 ) {
+    MPI_Cart_shift(ring_comm, 0, -1, &my_rank, &src_rank);
+    MPI_Recv(&mailbox, 1, MPI_INT, src_rank, 0, ring_comm, &status);
+    partial_sum += mailbox;
+    MPI_Cart_shift(ring_comm, 0, +1, &my_rank, &src_rank);
+    MPI_Recv(&mailbox, 1, MPI_INT, src_rank, 0, ring_comm, &status);
+    partial_sum += mailbox;
+  } else {
+      MPI_Cart_shift(ring_comm, 0,
+        cord < N/2 ? +1 : -1, &my_rank, &src_rank);
+      MPI_Cart_shift(ring_comm, 0,
+        cord < N/2 ? -1 : +1, &my_rank, &dst_rank);
+      MPI_Recv(&mailbox, 1, MPI_INT, src_rank, 0, ring_comm, &status);
+      partial_sum += mailbox;
+      MPI_Send(&mailbox, 1, MPI_INT, dst_rank, 0, ring_comm, &status);
   }
-
-
-
 
   if ( my_cord == 0 ) {
     printf("%d\n", partial_sum);
