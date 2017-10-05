@@ -8,20 +8,25 @@ int main(int argc, char** argv) {
   MPI_Comm hc_comm;
   int acc;
   int i, index;
+  int k;
   int mask, msg_dest, msg_source, my_virtual_id;
   int partial_sum;
   int rank,result, root_rank;
   int reorder = 1;
+  int root = 0;
   int virtual_source, virtual_dest;
   int world_size;
+  int actual_rank;
   unsigned int card_partial_data;
   unsigned int d;
+  unsigned int bit;
   unsigned int n;
   unsigned int temp;
   char flag;
   double initial_time, final_time;
   // pointer declaration
   int* cord;
+  int* c;
   int* data;
   int* dim;
   int* partial_data;
@@ -50,6 +55,7 @@ int main(int argc, char** argv) {
     temp = temp >> 1;
   }
   // allocate the memory
+  c            = (int*) malloc(d * sizeof(int));
   dim          = (int*) malloc(d * sizeof(int));
   root_cord    = (int*) malloc(d * sizeof(int));
   cord         = (int*) malloc(d * sizeof(int));
@@ -90,24 +96,41 @@ int main(int argc, char** argv) {
       //printf("data[i] = %d\n", data[i]);
     }
   }
+  my_cord = 0;
+  for (i = d - 1; i >= 0; i--) {
+    my_cord = my_cord << 1;
+    my_cord = my_cord | 0;
+  }
 
   // get the rank of each processor in the topology
   MPI_Cart_rank(hc_comm, root_cord, &root_rank);
   // 1-to-all personalized from source to all the processors
   // implemented using send and receive
-  my_virtual_id = rank ^ root_rank;
+  my_virtual_id = my_cord ^ root;
   mask = world_size - 1;
   index = n / 2;
   for (i = d - 1; i >= 0; i--) {
     mask = mask ^ (1 << i);
     if ((my_virtual_id & mask) == 0) {
       if ((my_virtual_id & (1 << i)) == 0) {
-        virtual_dest = my_virtual_id ^ (1 << i);
-        MPI_Send(&data[index], index, MPI_INT, (virtual_dest ^ root_rank), 0 , hc_comm);
+        virtual_dest_cord = my_virtual_id ^ (1 << i);
+        virtual_dest = (virtual_dest_cord ^ root);
+        for (k = 0; k < d - 1; k++) {
+          bit =  virtual_dest >> 1;
+          c[k] = bit;
+        }
+        MPI_Cart-rank(hc_comm, c, &actual_rank);
+        MPI_Send(&data[index], index, MPI_INT, actual_rank, 0 , hc_comm);
       }
       else {
-        virtual_source = my_virtual_id ^ (1 << i);
-        MPI_Recv(data, index, MPI_INT, (virtual_source ^ root_rank), 0, hc_comm, MPI_STATUS_IGNORE);
+        virtual_source_cord = my_virtual_id ^ (1 << i);
+        virtual_source = (virtual_source_cord ^ root);
+        for (k = 0; k < d - 1; k++) {
+          bit = virtual_source >> 1;
+          c[k] = bit;
+        }
+        MPI_Cart-rank(hc_comm, c, &actual_rank);
+        MPI_Recv(data, index, MPI_INT, actual_rank, 0, hc_comm, MPI_STATUS_IGNORE);
       }
     }
     index = index >> 1;
@@ -126,14 +149,24 @@ int main(int argc, char** argv) {
   // implemented using send and receive
   mask = 0;
   for (i = 0; i < d; i++) {
-    if ((rank & mask) == 0) {
-      if ((rank & (1 << i)) != 0) {
-        msg_dest = rank ^ (1 << i);
-        MPI_Send(&partial_sum, 1, MPI_INT, msg_dest, 0, hc_comm);
+    if ((my_cord & mask) == 0) {
+      if ((my_cord & (1 << i)) != 0) {
+        msg_dest = my_cord ^ (1 << i);
+        for (k = 0; k < d - 1; k++) {
+          bit = msg_dest >> 1;
+          c[k] = bit;
+        }
+        MPI_Cart-rank(hc_comm, c, &actual_rank);
+        MPI_Send(&partial_sum, 1, MPI_INT, actual_rank, 0, hc_comm);
       }
       else {
         msg_source = rank ^ (1 << i);
-        MPI_Recv(&acc, 1, MPI_INT, msg_source, 0, hc_comm, MPI_STATUS_IGNORE);
+        for (k = 0; k < d - 1; k++) {
+          bit = msg_source >> 1;
+          c[k] = bit;
+        }
+        MPI_Cart-rank(hc_comm, c, &actual_rank);
+        MPI_Recv(&acc, 1, MPI_INT, actual-rank, 0, hc_comm, MPI_STATUS_IGNORE);
         partial_sum += acc;
       }
     }
@@ -153,6 +186,7 @@ int main(int argc, char** argv) {
 
   // free the dynamic memory allocated
   free(cord);
+  free(c);
   free(data);
   free(dim);
   free(partial_data);
