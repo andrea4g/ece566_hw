@@ -8,15 +8,18 @@ int main(int argc, char** argv) {
   MPI_Comm hc_comm;
   int acc;
   int i, index;
+  int temp1;
   int k;
   int mask, msg_dest, msg_source, my_virtual_id;
+  int my_cord;
   int partial_sum;
   int rank,result, root_rank;
   int reorder = 1;
   int root = 0;
-  int virtual_source, virtual_dest;
+  int virtual_source, virtual_dest, virtual_dest_cord, virtual_source_cord;
   int world_size;
   int actual_rank;
+  int save;
   unsigned int card_partial_data;
   unsigned int d;
   unsigned int bit;
@@ -91,53 +94,89 @@ int main(int argc, char** argv) {
     srand(NULL);
     // fill data with random values
     for (i = 0; i < n; i++) {
-      data[i] = rand();
-      //data[i] = i;
+      //data[i] = rand();
+      data[i] = i;
       //printf("data[i] = %d\n", data[i]);
     }
   }
   my_cord = 0;
   for (i = d - 1; i >= 0; i--) {
-    my_cord = my_cord << 1;
-    my_cord = my_cord | 0;
+    save = 0;
+    //printf("cord[%d] << i = %d\n", i, cord[i] << i);
+    save = cord[i] << i;
+    my_cord += save;
   }
+  printf("rank = %d cord = %d\n", rank, my_cord);
 
   // get the rank of each processor in the topology
   MPI_Cart_rank(hc_comm, root_cord, &root_rank);
   // 1-to-all personalized from source to all the processors
   // implemented using send and receive
-  my_virtual_id = my_cord ^ root;
+  my_virtual_id = my_cord;
   mask = world_size - 1;
   index = n / 2;
   for (i = d - 1; i >= 0; i--) {
+    //if(my_cord & (1 << i)) {
+    //  if(cord[i] == 1){ //rec
+    //    for (k = 0; k < d - 1; k++) {
+    //      bit = my_cord & 0x01;
+    //      c[k] = bit;
+    //      my_cord = my_cord >> 1;
+    //    }
+    //    MPI_Cart_rank(hc_comm, c, &actual_rank);
+    //    printf("%d receiving\n", actual_rank);
+    //    MPI_Recv(data, index, MPI_INT, actual_rank, 0, hc_comm, MPI_STATUS_IGNORE);
+    //  }
+    //  else { //sender
+    //    for (k = 0; k < d - 1; k++) {
+    //      bit = my_cord & 0x01;
+    //      c[k] = bit;
+    //      my_cord = my_cord >> 1;
+    //    }
+    //    MPI_Cart_rank(hc_comm, c, &actual_rank);
+    //    printf("%d sending\n", actual_rank);
+    //    MPI_Send(&data[index], index, MPI_INT, actual_rank, 0 , hc_comm);
+    //  }
+    //}
+
     mask = mask ^ (1 << i);
-    if ((my_virtual_id & mask) == 0) {
-      if ((my_virtual_id & (1 << i)) == 0) {
-        virtual_dest_cord = my_virtual_id ^ (1 << i);
-        virtual_dest = (virtual_dest_cord ^ root);
-        for (k = 0; k < d - 1; k++) {
-          bit =  virtual_dest >> 1;
+    if ((my_cord & mask) == 0) {
+      if ((my_cord & (1 << i)) == 0) {
+        virtual_dest_cord = my_cord ^ (1 << i);
+        //virtual_dest = (virtual_dest_cord ^ root);
+        temp1 = virtual_dest_cord;
+        for (k = 0; k < d; k++) {
+          bit = virtual_dest_cord & 0x01;
           c[k] = bit;
+          virtual_dest_cord = virtual_dest_cord >> 1;
         }
-        MPI_Cart-rank(hc_comm, c, &actual_rank);
+        MPI_Cart_rank(hc_comm, c, &actual_rank);
+        printf("%d sending to r: %d c: %d\n", my_cord, actual_rank,temp1);
         MPI_Send(&data[index], index, MPI_INT, actual_rank, 0 , hc_comm);
-      }
-      else {
-        virtual_source_cord = my_virtual_id ^ (1 << i);
-        virtual_source = (virtual_source_cord ^ root);
-        for (k = 0; k < d - 1; k++) {
-          bit = virtual_source >> 1;
-          c[k] = bit;
         }
-        MPI_Cart-rank(hc_comm, c, &actual_rank);
+        else {
+        printf("PPP %d\n", my_cord);
+        virtual_source_cord = my_cord ^ (1 << i);
+        //virtual_source = (virtual_source_cord ^ root);
+        temp1 = virtual_source_cord;
+        for (k = 0; k < d; k++) {
+          bit = virtual_source_cord  & 0x01;
+          c[k] = bit;
+          virtual_source_cord = virtual_source_cord >> 1;
+        }
+        MPI_Cart_rank(hc_comm, c, &actual_rank);
+        printf("%d rec from r: %d c: %d\n", my_cord, actual_rank,virtual_source_cord);
         MPI_Recv(data, index, MPI_INT, actual_rank, 0, hc_comm, MPI_STATUS_IGNORE);
       }
     }
     index = index >> 1;
   }
+  
+  printf("rank_proc = %d\n", rank);
   // save the final value of the scatter inside partial_data
   for (i = 0; i < card_partial_data; i++) {
     partial_data[i] = data[i];
+    printf("partial_data[%d] = %d\n", i, partial_data[i]);
   }
   // initialize the partial sum of each processor
   partial_sum = 0;
@@ -152,21 +191,23 @@ int main(int argc, char** argv) {
     if ((my_cord & mask) == 0) {
       if ((my_cord & (1 << i)) != 0) {
         msg_dest = my_cord ^ (1 << i);
-        for (k = 0; k < d - 1; k++) {
-          bit = msg_dest >> 1;
+        for (k = 0; k < d; k++) {
+          bit =  msg_dest & 0x01;
           c[k] = bit;
+          msg_dest = msg_dest >> 1;
         }
-        MPI_Cart-rank(hc_comm, c, &actual_rank);
+        MPI_Cart_rank(hc_comm, c, &actual_rank);
         MPI_Send(&partial_sum, 1, MPI_INT, actual_rank, 0, hc_comm);
       }
       else {
-        msg_source = rank ^ (1 << i);
-        for (k = 0; k < d - 1; k++) {
-          bit = msg_source >> 1;
+        msg_source = my_cord ^ (1 << i);
+        for (k = 0; k < d; k++) {
+          bit =  msg_source & 0x01;
           c[k] = bit;
+          msg_source = msg_source >> 1;
         }
-        MPI_Cart-rank(hc_comm, c, &actual_rank);
-        MPI_Recv(&acc, 1, MPI_INT, actual-rank, 0, hc_comm, MPI_STATUS_IGNORE);
+        MPI_Cart_rank(hc_comm, c, &actual_rank);
+        MPI_Recv(&acc, 1, MPI_INT, actual_rank, 0, hc_comm, MPI_STATUS_IGNORE);
         partial_sum += acc;
       }
     }
@@ -183,7 +224,6 @@ int main(int argc, char** argv) {
   final_time = MPI_Wtime();
   // compute and print the rank of the processor and the time it took to complete the task
   printf("Proc: %d, time: %f\n", rank, final_time-initial_time);
-
   // free the dynamic memory allocated
   free(cord);
   free(c);

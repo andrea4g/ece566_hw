@@ -3,10 +3,10 @@
 #PBS -N hctestJob
 #PBS -q edu_shared
 
-#PBS -e /export/home/acipol2/ece566_hw/hw1/hypercube/pbs_files/only_N/nnumber_of_nodes_ppnprocs_per_node_kKprocs/mpitest_Nelement.err
-#PBS -o /export/home/acipol2/ece566_hw/hw1/hypercube/pbs_files/only_N/nnumber_of_nodes_ppnprocs_per_node_kKprocs/mpitest_Nelement.out
-#PBS -d /export/home/acipol2/ece566_hw/hw1/hypercube
+#PBS -e /export/home/agualc2/ece566_hw/hw1/hypercube/pbs_files/only_N/nnumber_of_nodes_ppnprocs_per_node_kKprocs/mpitest_Nelement.err
+#PBS -o /export/home/agualc2/ece566_hw/hw1/hypercube/pbs_files/only_N/nnumber_of_nodes_ppnprocs_per_node_kKprocs/mpitest_Nelement.out
+#PBS -d /export/home/agualc2/ece566_hw/hw1/hypercube
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np Kprocs /export/home/acipol2/ece566_hw/hw1/hypercube/hctest Nelement 
+mpirun -machinefile $PBS_NODEFILE -np Kprocs /export/home/agualc2/ece566_hw/hw1/hypercube/hctest Nelement 
