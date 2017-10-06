@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l nodes=4:ppn=4,walltime=1:00 
+#PBS -l nodes=4:ppn=4,walltime=13:00 
 #PBS -N ringtestJob
 #PBS -q edu_shared
 
