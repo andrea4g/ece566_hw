@@ -1,21 +1,20 @@
 mpitest_1024.out
-Av_time: 0.000063 ,dev: 0.000001
+Av_time: 0.047119 ,dev: 0.143878
 Job complete
 mpitest_1048576.out
-Av_time: 0.001871 ,dev: 0.041695
 Job complete
 mpitest_16384.out
-Av_time: 0.000205 ,dev: 0.000108
+Av_time: 0.056133 ,dev: 0.267198
 Job complete
 mpitest_262144.out
-Av_time: 0.000602 ,dev: 0.000073
+Av_time: 0.002423 ,dev: 0.000053
 Job complete
 mpitest_4096.out
-Av_time: 0.000252 ,dev: 0.000425
+Av_time: 0.000110 ,dev: 0.000001
 Job complete
 mpitest_4194304.out
-Av_time: 0.005472 ,dev: 0.080536
+Av_time: 0.039889 ,dev: 0.003159
 Job complete
 mpitest_65536.out
-Av_time: 0.000194 ,dev: 0.000009
+Av_time: 0.001393 ,dev: 0.006946
 Job complete
