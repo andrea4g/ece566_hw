@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
   int i, index;
   int temp1;
   int k;
-  int mask, msg_dest, msg_source, my_virtual_id;
+  int mask, msg_dest, msg_source;
   int my_cord;
   int partial_sum;
   int rank,result, root_rank;
@@ -99,7 +99,6 @@ int main(int argc, char** argv) {
   my_cord = 0;
   for (i = d - 1; i >= 0; i--) {
     save = 0;
-    //printf("cord[%d] << i = %d\n", i, cord[i] << i);
     save = cord[i] << i;
     my_cord += save;
   }
@@ -108,7 +107,6 @@ int main(int argc, char** argv) {
   MPI_Cart_rank(hc_comm, root_cord, &root_rank);
   // 1-to-all personalized from source to all the processors
   // implemented using send and receive
-  my_virtual_id = my_cord;
   mask = world_size - 1;
   index = n / 2;
   for (i = d - 1; i >= 0; i--) {
@@ -125,7 +123,7 @@ int main(int argc, char** argv) {
         MPI_Cart_rank(hc_comm, c, &actual_rank);
         MPI_Send(&data[index], index, MPI_INT, actual_rank, 0 , hc_comm);
         }
-        else {
+      else {
         virtual_source_cord = my_cord ^ (1 << i);
         temp1 = virtual_source_cord;
         for (k = 0; k < d; k++) {
