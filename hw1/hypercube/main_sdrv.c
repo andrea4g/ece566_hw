@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-#define DEBUG 1
+#define DEBUG 0 
 #define N_ITERATIONS 1000
 
 
@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
   // if it is the root processor
   if (flag) {
     // declare the seed
-    srand(NULL);
+    srand((unsigned) 0);
     // fill data with random values
     for (i = 0; i < n; i++) {
       data[i] = rand();
@@ -113,7 +113,8 @@ int main(int argc, char** argv) {
   MPI_Cart_rank(hc_comm, root_cord, &root_rank);
   // 1-to-all personalized from source to all the processors
   // implemented using send and receive
-  
+ 
+  average_time = 0;
   for ( iteration = 0; iteration < N_ITERATIONS; iteration++ ) { 
     
     initial_time = MPI_Wtime();
@@ -195,8 +196,9 @@ int main(int argc, char** argv) {
 #if DEBUG
     if (flag){
       printf("Sum: %d\n", result);
-#endif
     }
+#endif
+    
     // save final time of the task
     final_time = MPI_Wtime();
     time_vector[iteration] = final_time - initial_time;

@@ -1,0 +1,21 @@
+mpitest_1024.out
+Av_time: 0.000167 ,dev: 0.000269
+Job complete
+mpitest_1048576.out
+Av_time: 0.003370 ,dev: 0.080775
+Job complete
+mpitest_16384.out
+Av_time: 0.000427 ,dev: 0.040480
+Job complete
+mpitest_262144.out
+Av_time: 0.001660 ,dev: 0.098850
+Job complete
+mpitest_4096.out
+Av_time: 0.000404 ,dev: 0.000201
+Job complete
+mpitest_4194304.out
+Av_time: 0.011817 ,dev: 0.080260
+Job complete
+mpitest_65536.out
+Av_time: 0.000325 ,dev: 0.000094
+Job complete
