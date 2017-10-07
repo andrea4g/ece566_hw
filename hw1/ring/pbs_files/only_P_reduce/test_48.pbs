@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l nodes=3:ppn=16,walltime=10:00 
+#PBS -N ringtestJob
+#PBS -q edu_shared
+
+#PBS -e /export/home/acipol2/ece566_hw/hw1/ring/pbs_files/only_N/mpitest_48.err
+#PBS -o /export/home/acipol2/ece566_hw/hw1/ring/pbs_files/only_N/mpitest_48.out
+#PBS -d /export/home/acipol2/ece566_hw/hw1/ring
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np 48 /export/home/acipol2/ece566_hw/hw1/ring/ringtest 268435456 

@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l nodes=number_of_nodes:ppn=procs_per_node,walltime=10:00 
+#PBS -N ringtestJob
+#PBS -q edu_shared
+
+#PBS -e /export/home/acipol2/ece566_hw/hw1/ring/pbs_files/only_N/mpitest_Kprocs.err
+#PBS -o /export/home/acipol2/ece566_hw/hw1/ring/pbs_files/only_N/mpitest_Kprocs.out
+#PBS -d /export/home/acipol2/ece566_hw/hw1/ring
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np Kprocs /export/home/acipol2/ece566_hw/hw1/ring/ringtest Nelement 

@@ -1,0 +1,15 @@
+mpitest_16.out
+Av_time: 0.075781 ,dev: 0.002198
+Job complete
+mpitest_32.out
+Av_time: 0.198255 ,dev: 0.009042
+Job complete
+mpitest_4.out
+Av_time: 0.198046 ,dev: 0.013969
+Job complete
+mpitest_64.out
+Av_time: 0.139529 ,dev: 0.058551
+Job complete
+mpitest_8.out
+Av_time: 0.084319 ,dev: 0.001941
+Job complete

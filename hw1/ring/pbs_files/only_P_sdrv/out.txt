@@ -1,0 +1,26 @@
+mpitest_16.out
+Av_time: 0.429068 ,dev: 0.104200
+Job complete
+mpitest_2.out
+Job complete
+mpitest_32.out
+Av_time: 1.039861 ,dev: 0.381656
+Job complete
+mpitest_48.out
+Av_time: 1.445827 ,dev: 0.924585
+Job complete
+mpitest_4.out
+Av_time: 0.123797 ,dev: 0.003586
+Job complete
+mpitest_64.out
+Av_time: 1.937244 ,dev: 1.633866
+Job complete
+mpitest_80.out
+Av_time: 2.562648 ,dev: 2.601665
+Job complete
+mpitest_8.out
+Av_time: 0.221292 ,dev: 0.022445
+Job complete
+mpitest_96.out
+Av_time: 2.966728 ,dev: 3.711914
+Job complete
