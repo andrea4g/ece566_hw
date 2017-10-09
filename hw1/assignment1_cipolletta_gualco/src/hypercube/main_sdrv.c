@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-#define DEBUG 0 
+#define DEBUG 1
 #define N_ITERATIONS 1000
 
 
@@ -99,7 +99,11 @@ int main(int argc, char** argv) {
     srand((unsigned) 0);
     // fill data with random values
     for (i = 0; i < n; i++) {
+#if DEBUG
+      data[i] = i;
+#else
       data[i] = rand();
+#endif
     }
   }
   my_cord = 0;
