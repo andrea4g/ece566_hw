@@ -3,8 +3,8 @@
 #include <time.h>
 #include <mpi.h>
 
-#define N_ITERATIONS 10
-#define DEBUG 1
+#define N_ITERATIONS 50
+#define DEBUG 0
 
 /*-------------------------------TYPES DEFINITION-----------------------------*/
 typedef float** Matrix;
@@ -143,7 +143,7 @@ int main(int argc, char** argv) {
       deviation += (time_vector[i] - average_time)*(time_vector[i] - average_time);
     }
     // compute and print the rank of the processor and the time it took to complete the task
-    printf("Av_time: %f ,dev: %f\n", average_time, deviation);
+    printf("%f, %f\n", average_time, deviation);
   }
 
 

@@ -1,10 +1,10 @@
 #!/bin/bash
-#PBS -l nodes=number_of_nodes:ppn=procs_per_node,walltime=10:00 
+#PBS -l procs=Kprocs,walltime=10:00 
 #PBS -N det_job
 #PBS -q edu_shared
 
-#PBS -e output/mpitest_Nelement.err
-#PBS -o output/mpitest_Nelement.out
+#PBS -e output/mpitest_Nelement_Kprocs.err
+#PBS -o output/mpitest_Nelement_Kprocs.out
 #PBS -d ./
 
 module load tools/mpich2-1.5-gcc
