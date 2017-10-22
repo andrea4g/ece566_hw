@@ -201,18 +201,17 @@ Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols ) {
 }
 
 
-Flat_matrix flattenize_matrix(Matrix* A_add, int dimension) {
+Flat_matrix flattenize_matrix(Matrix A, int rows, int cols) {
 
   Matrix mat;
   Flat_matrix fmat;
   int i,j;
 
-  mat = *A_add;
-  fmat = (Flat_matrix) malloc(dimension*dimension*sizeof(float));
+  fmat = (Flat_matrix) malloc(rows*cols*sizeof(float));
 
-  for ( i = 0; i < dimension; i++ ) {
-    for (j = 0; j < dimension; j++) {
-      fmat[i*dimension + j] = mat[i][j];
+  for ( i = 0; i < rows; i++ ) {
+    for (j = 0; j < cols; j++) {
+      fmat[i*cols + j] = mat[i][j];
     }
   }
 
@@ -222,17 +221,44 @@ Flat_matrix flattenize_matrix(Matrix* A_add, int dimension) {
 
 
 
-void LU_decomposition() {
+void LU_decomposition(
+    int p,                      // Number of processors.
+    Matrix A,                   // A matrix.
+    int my_cord,                // Cordinates of this processor.
+    int n,                      // Number of cols of A.
+    int* rows_division) {       // How many rows for each processor.
 
-  if ( my_cord == 0 ) {
-    compute_adjustment();
-    send_block();
-  } else {
-    for ( k = 0; k < my_cord - 1; k++ ) {
-      receive_block();
-      compute_adjustment();
+  int k,i, rank_src, my_rank;
+  int max_rows = rows_division[0];
+  int head_offset_row = 0;
+  Matrix B;
+  Flat_matrix A_flat, B_flat;
+  
+  for ( i = 1; i < p; i++ ) {
+    if ( rows_division[i] > max_rows ) {
+      max_rows = rows_division[i];
     }
-    send_block();
+  }
+  B_flat = (Flat_matrix) malloc(max_rows*n*sizeof(float));
+
+  MPI_Cart_rank(ring_comm, &my_cord, &my_rank);
+
+  for ( k = 0; k < my_cord; k++ ) {
+    if ( k != 0 ) {
+      head_offset_row += rows_division[k-1];
+    }
+    MPI_Cart_rank(ring_comm, &k, &rank_src);
+    MPI_Bcast(B_flat, row_division[k]*n, MPI_FLOAT, rank_src, ring_comm);
+    B = deflattenize_matrix(B_flat, row_division[my_cord], n);
+    compute_extern(A, rows_division[my_cord], n, B, head_offset_row, rows_division[k]);
+    free(B);
+  }
+  head_offset_row += rows_division[k-1];
+  compute_intern(A,rows_division[my_cord],n,head_offset_row);
+  if ( my_cord != p - 1 ) {
+    A_flat = flattenize_matrix(A,rows_division[my_cord],n);
+    MPI_Bcast(A_flat, row_division[my_cord]*n, MPI_FLOAT, my_rank, ring_comm);
+    free(A_flat);
   }
 
   return;
@@ -240,80 +266,51 @@ void LU_decomposition() {
 }
 
 
+void compute_extern(
+    Matrix A,                   // A Matrix = internal LU combination. See report.
+    int rows_A,                 // Number of rows of A, it depends on the processor coordinate.
+    int n,                      // Number of cols of A and B. The partition is done on the rows.
+    Matrix B,                   // B Matrix = received sub-matrix.
+    int head_offset_row,        // Virtual index of the first row in B.
+    int rows_B ) {              // Number of rows of B.
 
-void adjustment() {
+  int i, j, k;
+  int tail_offset_row = head_offset_row + rows_B;
 
-  for ( i = 1 + first_row_index; i < number_of_rows[0]; i++ ) {
-    for ( j = first_row_index; j < n; j++ ) {
+  for ( k = head_offset_row; k < tail_offset_row; k++ ) {
+    physical_row_index = k - head_offset_row;
+    for ( i = 0; i < rows_A; i++ ) {
+      A[i][k] = A[i][k]/B[physical_row_index][k];
+      for ( j = 0; j < n; j++ ) {
+        A[i][j] = A[i][j] - A[i][k]*B[physical_row_index][j];
+      }
+    }
+  }
+
+}
+
+void compute_intern(
+    Matrix A,                   // A matrix = internal LU combination. See report.
+    int rows_A,                 // Number of rows of A. 
+    int n,                      // Number of cols of A.
+    int head_offset_row) {      // Virtual index of the first row of A
+
+  for ( i = 1 + head_offset_row; i < head_offset_row + rows_A; i++ ) {
+    for ( j = head_offset_row; j < n; j++ ) {
       sum = 0;
-      if ( j < i) {
+      if ( j < i ) {
         for ( k = first_row_index; k < j; k++ ) {
-          sum += A[i - first_row_index][k]*A[k-first_row_index][j];
+          sum += A[i - head_offset_row][k]*A[k-head_offset_row][j];
         }
-        A[i - first_row_index][j] = (A[i - first_row_index][j] - sum)/A[j][j];
+        A[i - head_offset_row][j] 
+          = (A[i - head_offset_row][j] - sum)/A[j - head_offset_row][j];
       } else {
-        for ( k = first_row_index; k < i + first_row_index; k++ ) {
-          sum += A[i-first_row_index][k]*A[k - first_row_index][j];
+        for ( k = first_row_index; k < i; k++ ) {
+          sum += A[i- head_offset_row][k]*A[k - head_offset_row][j];
         }
         A[i][j] = A[i][j] - sum;
       }
     }
   }
 }
-
-
-
-
-
-void adjustment_0() {
-
-  for ( i = 1; i < number_of_rows[0]; i++ ) {
-    for ( j = 0; j < n; j++ ) {
-      sum = 0;
-      if ( j < i) {
-        for ( k = 0; k < j; k++ ) {
-          sum += A[i][k]*A[k][j];
-        }
-        A[i][j] = (A[i][j] - sum)/A[j][j];
-      } else {
-        for ( k = 0; k < i; k++ ) {
-          sum += A[i][k]*A[k][j];
-        }
-        A[i][j] = A[i][j] - sum;
-      }
-    }
-  }
-}
-
-void adjustemnt_extern() {
-
-  
-
-  for ( i = 1; i < number_of_rows[0]; i++ ) {
-    for ( j = 0; j < n; j++ ) {
-      sum = 0;
-      if ( j < i) {
-        for ( k = 0; k < j; k++ ) {
-          sum += A[i][k]*A[k][j];
-        }
-      } else {
-        for ( k = 0; k < i; k++ ) {
-          sum += A[i][k]*A[k][j];
-        }
-        A[i][j] = A[i][j] - sum;
-      }
-    }
-  }
-
-}
-
-
-
-
-
-
-
-
-
-
 
