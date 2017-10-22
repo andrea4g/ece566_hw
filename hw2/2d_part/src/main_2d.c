@@ -17,9 +17,16 @@ Matrix allocate_zero_matrix(int rows, int cols);
 Flat_matrix flattenize_matrix(Matrix A, int rows, int cols);
 Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols );
 void print_matrix(Matrix A, int rows, int cols);
-void compute_intern(Matrix A, int rows_A, int n, int head_offset_row, int my_cord);
-void compute_extern( Matrix A, int rows_A, int n, Matrix B, int head_offset_row, int rows_B,int my_cord );
 void LU_decomposition( int p, Matrix A, int my_cord, int n, int* rows_division, MPI_Comm comm);
+
+void compute_intern(Matrix A,int n);
+void compute_only_left(Matrix A, Matrix B, int n);
+void compute_up_left(Matrix A, Matrix B, Matrix C, int n);
+void compute_only_up(Matrix A, Matrix B, int n);
+void send_on_col(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int srt_col);
+void receive(MPI_Comm mesh_comm, int col, int row, Matrix mailbox, n);
+void send_on_row(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int srt_col);
+
 void LU_decomposition_serial(Matrix A, int n);
 float compute_det_serial(Matrix A, int n);
 int square_root(int p);
