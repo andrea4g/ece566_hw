@@ -5,13 +5,22 @@
 #define N_ITERATIONS 10
 #define DEBUG 0
 
+/*-------------------------------TYPES DEFINITION-----------------------------*/
 typedef float** Matrix;
 typedef float*  Flat_matrix;
+/*----------------------------------------------------------------------------*/
 
-Matrix allocate_zero_matrix(int dimension);
-Flat_matrix flattenize_matrix(Matrix* A_add, int dimension);
 
-void print_matrix(Matrix* A_add, int dimension);
+/*-------------------------------FUNCTION PROTOTYPES--------------------------*/
+Matrix allocate_zero_matrix(int rows, int cols);
+Flat_matrix flattenize_matrix(Matrix A, int rows, int cols);
+Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols );
+void print_matrix(Matrix A, int rows, int cols);
+void compute_intern(Matrix A, int rows_A, int n, int head_offset_row);
+void compute_extern( Matrix A, int rows_A, int n, Matrix B, int head_offset_row, int rows_B );
+void LU_decomposition( int p, Matrix A, int my_cord, int n, int* rows_division);
+/*----------------------------------------------------------------------------*/
+
 
 
 int main(int argc, char** argv) {
@@ -21,26 +30,21 @@ int main(int argc, char** argv) {
   int reorder = 1;
   int period = 1;
   int root_rank,root_cord;
-
   int n,p;
-  int my_rank;
+  int my_rank, my_cord;
   int i,iteration;
-  int result,partial_sum;
+  float result,partial_det;
   int rows_per_proc,reminder;
   double time_vector[N_ITERATIONS],deviation;
   double average_time, final_time, initial_time;
   // pointer declaration
-  Matrix A; 
-  Flat_matrix A_flat;
-
-
-  
-
-  int my_cord;
-  int* data;
-  int* partial_data;
+  int* rows_division;
   int* sendcounts;
   int* displs;
+  Matrix A,B;  
+  Flat_matrix A_flat, B_flat;
+
+
 
   // save in n the dimension of theMatrix
   n = atoi(argv[1]);
@@ -63,11 +67,14 @@ int main(int argc, char** argv) {
   // Allocate vectors for SCATTERV primitive
   sendcounts = (int*) malloc(p*sizeof(int));
   displs = (int*) malloc(p*sizeof(int));
+  rows_division = (int*) malloc(p*sizeof(int));
   // Assign to the root the reminder
   for ( i = 0; i < p; i++ ) {
     sendcounts[i] = rows_per_proc*n;
+    rows_division[i] = rows_per_proc;
     if ( i < reminder ) {
       sendcounts[i] += n;
+      rows_division[i] += 1;
     }
     if ( i == 0 ) {
       displs[i] = 0;
@@ -100,7 +107,6 @@ int main(int argc, char** argv) {
   }
 
 
-
   average_time = 0;
   for ( iteration = 0; iteration < N_ITERATIONS; iteration++ ) {
     // save initial time of the task
@@ -108,15 +114,18 @@ int main(int argc, char** argv) {
     // scatter the data from source to all the processors
     MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_cord], MPI_FLOAT, root_rank, ring_comm);
     B = deflattenize_matrix(B_flat,sendcounts[my_cord]/n,n);
-    LU_decomposition();
-    
+    LU_decomposition(p,B,my_cord,n, rows_division);
+    partial_det = 1;
+    for ( i = 0; i < rows_division[my_cord]; i++ ) {
+      partial_det = partial_det*B[i][i];
+    }
     // apply reduce operation (MPI_SUM) on the root processor
-    MPI_Reduce(&partial_sum, &result, 1, MPI_INT, MPI_SUM, root_rank, ring_comm);
+    MPI_Reduce(&partial_det, &result, 1, MPI_FLOAT, MPI_PROD, root_rank, ring_comm);
     // save final time of the task
     final_time = MPI_Wtime();
     if ( my_rank == root_rank) {
     #if DEBUG
-      printf("Sum: %d\n", result);
+      printf("DET: %d\n", result);
     #endif
       // and free the data array dinamically allocated
     }
@@ -124,8 +133,6 @@ int main(int argc, char** argv) {
     average_time += time_vector[iteration];
   }
   average_time = average_time/N_ITERATIONS;
-
-
 
 
   if ( my_rank == root_rank ) {
@@ -149,20 +156,17 @@ int main(int argc, char** argv) {
 }
 
 
-void print_matrix(Matrix* A_add, int dimension) {
+void print_matrix(Matrix A, int rows, int cols) {
 
-  Matrix A = *A_add;
   int i,j;
 
-  for (i = 0; i < dimension; i++ ) {
-    for ( j = 0; j < dimension; j++ ) {
+  for (i = 0; i < rows; i++ ) {
+    for ( j = 0; j < cols; j++ ) {
       printf("%.2f\t", A[i][j]);
     }
     printf("\n");
   }
-
   return;
-
 }
 
 
