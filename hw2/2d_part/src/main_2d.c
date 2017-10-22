@@ -19,7 +19,7 @@ Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols );
 void print_matrix(Matrix A, int rows, int cols);
 void compute_intern(Matrix A, int rows_A, int n, int head_offset_row, int my_cord);
 void compute_extern( Matrix A, int rows_A, int n, Matrix B, int head_offset_row, int rows_B,int my_cord );
-void LU_decomposition( int p, Matrix A, int my_cord, int n, int* rows_division, MPI_Comm comm);
+void LU_decomposition( int p, Matrix A, int* my_cord, int n, int* rows_division, MPI_Comm comm);
 void LU_decomposition_serial(Matrix A, int n);
 float compute_det_serial(Matrix A, int n);
 int square_root(int p);
@@ -136,9 +136,6 @@ int main(int argc, char** argv) {
     partial_det = 1;
 
 /*---------------------------------------------------------------------------------------------------------------------------*/
-    for ( i = 0; i < rows_division[my_cord]; i++ ) {
-      partial_det = partial_det*B[i][i + displs[my_cord]/n];
-    }
     // apply reduce operation (MPI_SUM) on the root processor
    // MPI_Reduce(&partial_det, &result, 1, MPI_FLOAT, MPI_PROD, root_rank, ring_comm);
     // save final time of the task
@@ -246,17 +243,24 @@ Flat_matrix flattenize_matrix(Matrix A, int rows, int cols) {
 void LU_decomposition(
     int p,                      // Number of processors.
     Matrix A,                   // A matrix.
-    int my_cord,                // Cordinates of this processor.
+    int* my_cord,               // Cordinates of this processor.
     int n,                      // Number of cols of A.
     int* rows_division,         // How many rows for each processor.
     MPI_Comm comm) {            // Communicator.
 
+  int my_row, my_col;
+  int k;
+
+  Matrix mailbox_up, mailbox_left;
+
+  mailbox_up = allocate_zero_matrix(n,n);
+  mailbox_left = allocate_zero_matrix(n,n);
 
   my_row = my_cord[0];
   my_col = my_cord[1];
 
   for ( k = 0; (k < my_row) && (k <= my_col); k++ ) {
-    receive(k,my_row,mailbox_up);
+    receive(comm, k, my_row, mailbox_up, n);
     if ( my_col == k ) {
       compute_only_up(A, mailbox_up, n);
       send_on_row(A, n, my_row, my_col);
