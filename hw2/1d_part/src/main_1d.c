@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <mpi.h>
 
-#define N_ITERATIONS 10
-#define DEBUG 0
+#define N_ITERATIONS 1
+#define DEBUG 1
 
 /*-------------------------------TYPES DEFINITION-----------------------------*/
 typedef float** Matrix;
@@ -18,7 +18,7 @@ Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols );
 void print_matrix(Matrix A, int rows, int cols);
 void compute_intern(Matrix A, int rows_A, int n, int head_offset_row);
 void compute_extern( Matrix A, int rows_A, int n, Matrix B, int head_offset_row, int rows_B );
-void LU_decomposition( int p, Matrix A, int my_cord, int n, int* rows_division);
+void LU_decomposition( int p, Matrix A, int my_cord, int n, int* rows_division, MPI_Comm comm);
 /*----------------------------------------------------------------------------*/
 
 
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
   int root_rank,root_cord;
   int n,p;
   int my_rank, my_cord;
-  int i,iteration;
+  int i,j,iteration;
   float result,partial_det;
   int rows_per_proc,reminder;
   double time_vector[N_ITERATIONS],deviation;
@@ -43,8 +43,6 @@ int main(int argc, char** argv) {
   int* displs;
   Matrix A,B;  
   Flat_matrix A_flat, B_flat;
-
-
 
   // save in n the dimension of theMatrix
   n = atoi(argv[1]);
@@ -87,6 +85,8 @@ int main(int argc, char** argv) {
   // get the rank of root processor in the topology
   MPI_Cart_rank(ring_comm, &root_cord, &root_rank);
 
+  printf("%d %d\n", my_cord, my_rank);
+
   // if it is the root processor
   if ( my_cord == root_cord) {
     // allocate the data
@@ -95,17 +95,24 @@ int main(int argc, char** argv) {
     srand((unsigned int) 0);
     for (i = 0; i < n; i++) {
       for ( j = 0; j < n; j++ ) {
-        A[i][j] = rand() % 100;
+        A[i][j] = rand() % 10;
       }
     }
-    A_flat = flattenize_matrix(&A, n);
+    A_flat = flattenize_matrix(A, n,n);
+    for ( i = 0; i < p; i++ ) {
+      printf("%d\t ", sendcounts[i]);
+    }
+    printf("\n");
+    for ( i = 0; i < p; i++ ) {
+      printf("%d\t ", displs[i]);
+    }
+    printf("\n");
   #if DEBUG
-    print_matrix(&A,n);
+    print_matrix(A,n,n);
   #endif
-  } else {
-    B_flat = (Flat_matrix) malloc(sendcounts[my_cord]*sizeof(float));
   }
-
+  
+  B_flat = (Flat_matrix) malloc(sendcounts[my_cord]*sizeof(float));
 
   average_time = 0;
   for ( iteration = 0; iteration < N_ITERATIONS; iteration++ ) {
@@ -113,8 +120,14 @@ int main(int argc, char** argv) {
     initial_time = MPI_Wtime();
     // scatter the data from source to all the processors
     MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_cord], MPI_FLOAT, root_rank, ring_comm);
-    B = deflattenize_matrix(B_flat,sendcounts[my_cord]/n,n);
-    LU_decomposition(p,B,my_cord,n, rows_division);
+    B = deflattenize_matrix(B_flat,rows_division[my_cord],n);
+    printf("Proc: %d\n", my_cord); 
+    LU_decomposition(p,B,my_cord,n, rows_division, ring_comm);
+    if ( 1 ) {
+      MPI_Finalize();
+      return 0;
+    }
+   
     partial_det = 1;
     for ( i = 0; i < rows_division[my_cord]; i++ ) {
       partial_det = partial_det*B[i][i];
@@ -125,7 +138,7 @@ int main(int argc, char** argv) {
     final_time = MPI_Wtime();
     if ( my_rank == root_rank) {
     #if DEBUG
-      printf("DET: %d\n", result);
+      printf("DET: %f\n", result);
     #endif
       // and free the data array dinamically allocated
     }
@@ -142,11 +155,8 @@ int main(int argc, char** argv) {
     }
     // compute and print the rank of the processor and the time it took to complete the task
     printf("Av_time: %f ,dev: %f\n", average_time, deviation);
-    free(data);
   }
 
-  // free the dynamic memory allocated
-  free(partial_data);
 
   // close the MPI environment
   MPI_Finalize();
@@ -160,6 +170,7 @@ void print_matrix(Matrix A, int rows, int cols) {
 
   int i,j;
 
+  printf("R: %d, C: %d\n", rows, cols);
   for (i = 0; i < rows; i++ ) {
     for ( j = 0; j < cols; j++ ) {
       printf("%.2f\t", A[i][j]);
@@ -207,7 +218,6 @@ Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols ) {
 
 Flat_matrix flattenize_matrix(Matrix A, int rows, int cols) {
 
-  Matrix mat;
   Flat_matrix fmat;
   int i,j;
 
@@ -215,7 +225,7 @@ Flat_matrix flattenize_matrix(Matrix A, int rows, int cols) {
 
   for ( i = 0; i < rows; i++ ) {
     for (j = 0; j < cols; j++) {
-      fmat[i*cols + j] = mat[i][j];
+      fmat[i*cols + j] = A[i][j];
     }
   }
 
@@ -230,7 +240,8 @@ void LU_decomposition(
     Matrix A,                   // A matrix.
     int my_cord,                // Cordinates of this processor.
     int n,                      // Number of cols of A.
-    int* rows_division) {       // How many rows for each processor.
+    int* rows_division,         // How many rows for each processor.
+    MPI_Comm comm) {            // Communicator.
 
   int k,i, rank_src, my_rank;
   int max_rows = rows_division[0];
@@ -245,24 +256,32 @@ void LU_decomposition(
   }
   B_flat = (Flat_matrix) malloc(max_rows*n*sizeof(float));
 
-  MPI_Cart_rank(ring_comm, &my_cord, &my_rank);
+  MPI_Cart_rank(comm, &my_cord, &my_rank);
 
   for ( k = 0; k < my_cord; k++ ) {
     if ( k != 0 ) {
       head_offset_row += rows_division[k-1];
     }
-    MPI_Cart_rank(ring_comm, &k, &rank_src);
-    MPI_Bcast(B_flat, row_division[k]*n, MPI_FLOAT, rank_src, ring_comm);
-    B = deflattenize_matrix(B_flat, row_division[my_cord], n);
+    MPI_Cart_rank(comm, &k, &rank_src);
+    MPI_Bcast(B_flat, rows_division[k]*n, MPI_FLOAT, rank_src, comm);
+    B = deflattenize_matrix(B_flat, rows_division[k], n);
     compute_extern(A, rows_division[my_cord], n, B, head_offset_row, rows_division[k]);
     free(B);
   }
   head_offset_row += rows_division[k-1];
-  compute_intern(A,rows_division[my_cord],n,head_offset_row);
+  //compute_intern(A,rows_division[my_cord],n,head_offset_row);
+  printf("%d HERE!\n", my_cord);
   if ( my_cord != p - 1 ) {
-    A_flat = flattenize_matrix(A,rows_division[my_cord],n);
-    MPI_Bcast(A_flat, row_division[my_cord]*n, MPI_FLOAT, my_rank, ring_comm);
-    free(A_flat);
+    free(B_flat);
+    B_flat = flattenize_matrix(A,rows_division[my_cord],n);
+    MPI_Bcast(B_flat, rows_division[my_cord]*n, MPI_FLOAT, my_rank, comm);
+    free(B_flat);
+  }
+
+  B_flat = (Flat_matrix) malloc(max_rows*n*sizeof(float));
+  for ( k = my_cord + 1; k < p - 1; k++ ) {
+    MPI_Cart_rank(comm, &k, &rank_src);
+    MPI_Bcast(B_flat, rows_division[k]*n, MPI_FLOAT, rank_src, comm);
   }
 
   return;
@@ -279,6 +298,7 @@ void compute_extern(
     int rows_B ) {              // Number of rows of B.
 
   int i, j, k;
+  int physical_row_index;
   int tail_offset_row = head_offset_row + rows_B;
 
   for ( k = head_offset_row; k < tail_offset_row; k++ ) {
@@ -299,17 +319,21 @@ void compute_intern(
     int n,                      // Number of cols of A.
     int head_offset_row) {      // Virtual index of the first row of A
 
+  int i,j,k;
+  float sum;
+ 
+
   for ( i = 1 + head_offset_row; i < head_offset_row + rows_A; i++ ) {
     for ( j = head_offset_row; j < n; j++ ) {
       sum = 0;
       if ( j < i ) {
-        for ( k = first_row_index; k < j; k++ ) {
+        for ( k = head_offset_row; k < j; k++ ) {
           sum += A[i - head_offset_row][k]*A[k-head_offset_row][j];
         }
         A[i - head_offset_row][j] 
           = (A[i - head_offset_row][j] - sum)/A[j - head_offset_row][j];
       } else {
-        for ( k = first_row_index; k < i; k++ ) {
+        for ( k = head_offset_row; k < i; k++ ) {
           sum += A[i- head_offset_row][k]*A[k - head_offset_row][j];
         }
         A[i][j] = A[i][j] - sum;

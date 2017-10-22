@@ -1,0 +1,13 @@
+#!/bin/bash
+#PBS -l nodes=7:ppn=7,walltime=1:00 
+#PBS -N reduce_ring_job
+#PBS -q edu_shared
+
+#PBS -e mpitest_reduce.err
+#PBS -o mpitest_reduce.out
+#PBS -d ./ 
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./ring_reduce.o  65536
+
