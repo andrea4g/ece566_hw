@@ -20,6 +20,8 @@ void print_matrix(Matrix A, int rows, int cols);
 void compute_intern(Matrix A, int rows_A, int n, int head_offset_row, int my_cord);
 void compute_extern( Matrix A, int rows_A, int n, Matrix B, int head_offset_row, int rows_B,int my_cord );
 void LU_decomposition( int p, Matrix A, int my_cord, int n, int* rows_division, MPI_Comm comm);
+void LU_decomposition_serial(Matrix A, int n);
+float compute_det_serial(Matrix A, int n);
 /*----------------------------------------------------------------------------*/
 
 
@@ -341,5 +343,57 @@ void compute_intern(
       }
     }
   }
+}
+
+
+
+float compute_det_serial(Matrix A, int n) {
+
+  int i,j;
+  Matrix B;
+  float det;
+  B = allocate_zero_matrix(n);
+
+  for ( i = 0; i < n; i++ ) {
+    for ( j = 0; j < n; j++ ) {
+      B[i][j] = A[i][j];
+    }
+  }
+
+  LU_decomposition_serial(B, n);
+  det = 1;
+  for (i = 0; i < n; i++ ) {
+    det = det*B[i][i]; 
+  }
+
+  free(B);
+  return det;
+}
+
+
+void LU_decomposition_serial(Matrix A, int n) {
+
+  int i,j,k;
+  float sum;
+
+  for ( i = 1; i < n; i++ ) {
+    for ( j = 0; j < n; j++ ) {
+      sum = 0;
+      if ( j < i ) {
+        for ( k = 0; k < j; k++ ) {
+          sum += A[k][j]*A[i][k];
+        }
+        A[i][j] = (A[i][j] - sum)/A[j][j];
+      } else {
+        for ( k = 0; k < i; k++ ) {
+          sum += A[i][k]*A[k][j];
+        }
+        A[i][j] = A[i][j] - sum;
+      }
+    }
+  }
+
+
+  return;
 }
 

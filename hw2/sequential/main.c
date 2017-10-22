@@ -1,67 +1,60 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
-#define N 10
+typedef float** matrix;
 
-
-typedef int** matrix;
-
-int** allocate_zero_matrix(int dimension);
-void print_matrix(matrix* A_add, int dimension);
-void LU_decomposition(matrix* A_add ,matrix* L_add,matrix* U_add);
+matrix allocate_zero_matrix(int dimension);
+void print_matrix(matrix A, int dimension);
+void LU_decomposition_serial(matrix A, int n);
+float compute_det_serial(matrix A, int n);
 
 int main(int argc,char** argv) {
 
-  matrix A,L,U;
-  int i,j;
+  matrix A;
+  int i,j,n;
 
-  A = allocate_zero_matrix(N);
+  n = atoi(argv[1]);
 
-  for ( i = 0; i < N; i++ ) {
-    for (j = 0; j < N; j++ ) {
-      A[i][j] = rand() % 10;
+  A = allocate_zero_matrix(n);
+  
+  srand(time(0));
+  for ( i = 0; i < n; i++ ) {
+    for (j = 0; j < n; j++ ) {
+      A[i][j] = rand() % 20 - 10;
     }
   }
 
+  print_matrix(A,n);
 
-  LU_decomposition( &A,&L, &U); 
-
-  print_matrix(&A, N);
-  printf("\n");
-  print_matrix(&L, N);
-  printf("\n");
-  print_matrix(&U, N);
-
+  printf("Det: %f\n", compute_det(A,n));
 
   return 0;
 
 }
 
 
-void print_matrix(matrix* A_add, int dimension) {
+void print_matrix(matrix A, int dimension) {
 
-  matrix A = *A_add;
   int i,j;
-
 
   for (i = 0; i < dimension; i++ ) {
     for ( j = 0; j < dimension; j++ ) {
-      printf("%d\t", A[i][j]);
+      printf("%.2f\t", A[i][j]);
     }
     printf("\n");
   }
 }
 
+matrix allocate_zero_matrix(int dimension) {
 
-int** allocate_zero_matrix(int dimension) {
-  
-  int** mat;
+  matrix mat;
   int i,j;
 
-  mat = (int **) malloc(dimension*sizeof(int*));
+  mat = (matrix) malloc(dimension*sizeof(float*));
 
   for ( i = 0; i < dimension; i++ ) {
-    mat[i] = (int*) malloc(dimension*sizeof(int));
+    mat[i] = (float*) malloc(dimension*sizeof(float));
     for ( j = 0; j < dimension; j++ ) {
       mat[i][j] = 0;
     }
@@ -70,40 +63,54 @@ int** allocate_zero_matrix(int dimension) {
 }
 
 
-void LU_decomposition(matrix* A_add ,matrix* L_add,matrix* U_add) {
+void LU_decomposition_serial(matrix A, int n) {
 
-  matrix A,L,U;
   int i,j,k;
-  int sum;
+  float sum;
 
-  A = *A_add;
-  L = allocate_zero_matrix(N);
-  U = allocate_zero_matrix(N);
-
-  for ( i = 0; i < N; i++ ) {
-    L[i][i] = 1;
-  }
-
-  for ( i = 0; i < N; i++ ) {
-    for ( j = 0; j < N; j++ ) {
+  for ( i = 1; i < n; i++ ) {
+    for ( j = 0; j < n; j++ ) {
       sum = 0;
       if ( j < i ) {
-        for ( k = 0; k < j-1; k++ ) {
-          sum += L[i][k]*U[k][j];
+        for ( k = 0; k < j; k++ ) {
+          sum += A[k][j]*A[i][k];
         }
-        L[i][j] = (A[i][j] - sum)/U[j][j];
+        A[i][j] = (A[i][j] - sum)/A[j][j];
       } else {
-        for ( k = 0; k < i-1; k++ ) {
-          sum += L[i][k]*U[k][j];
+        for ( k = 0; k < i; k++ ) {
+          sum += A[i][k]*A[k][j];
         }
-        U[i][j] = A[i][j] - sum;
+        A[i][j] = A[i][j] - sum;
       }
     }
   }
 
-  *U_add = U;
-  *L_add = L;
 
   return;
 }
+
+
+float compute_det_serial(Matrix A, int n) {
+
+  int i,j;
+  matrix B;
+  float det;
+  B = allocate_zero_matrix(n);
+
+  for ( i = 0; i < n; i++ ) {
+    for ( j = 0; j < n; j++ ) {
+      B[i][j] = A[i][j];
+    }
+  }
+
+  LU_decomposition_serial(B, n);
+  det = 1;
+  for (i = 0; i < n; i++ ) {
+    det = det*B[i][i]; 
+  }
+
+  free(B);
+  return det;
+}
+
 
