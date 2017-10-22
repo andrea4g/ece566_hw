@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <mpi.h>
 
 #define N_ITERATIONS 1
@@ -16,8 +17,8 @@ Matrix allocate_zero_matrix(int rows, int cols);
 Flat_matrix flattenize_matrix(Matrix A, int rows, int cols);
 Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols );
 void print_matrix(Matrix A, int rows, int cols);
-void compute_intern(Matrix A, int rows_A, int n, int head_offset_row);
-void compute_extern( Matrix A, int rows_A, int n, Matrix B, int head_offset_row, int rows_B );
+void compute_intern(Matrix A, int rows_A, int n, int head_offset_row, int my_cord);
+void compute_extern( Matrix A, int rows_A, int n, Matrix B, int head_offset_row, int rows_B,int my_cord );
 void LU_decomposition( int p, Matrix A, int my_cord, int n, int* rows_division, MPI_Comm comm);
 /*----------------------------------------------------------------------------*/
 
@@ -85,28 +86,19 @@ int main(int argc, char** argv) {
   // get the rank of root processor in the topology
   MPI_Cart_rank(ring_comm, &root_cord, &root_rank);
 
-  printf("%d %d\n", my_cord, my_rank);
 
   // if it is the root processor
   if ( my_cord == root_cord) {
     // allocate the data
     A = allocate_zero_matrix(n,n);
     // declare the seed
-    srand((unsigned int) 0);
+    srand(time(0));
     for (i = 0; i < n; i++) {
       for ( j = 0; j < n; j++ ) {
-        A[i][j] = rand() % 10;
+        A[i][j] = rand() % 6;
       }
     }
     A_flat = flattenize_matrix(A, n,n);
-    for ( i = 0; i < p; i++ ) {
-      printf("%d\t ", sendcounts[i]);
-    }
-    printf("\n");
-    for ( i = 0; i < p; i++ ) {
-      printf("%d\t ", displs[i]);
-    }
-    printf("\n");
   #if DEBUG
     print_matrix(A,n,n);
   #endif
@@ -121,16 +113,10 @@ int main(int argc, char** argv) {
     // scatter the data from source to all the processors
     MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_cord], MPI_FLOAT, root_rank, ring_comm);
     B = deflattenize_matrix(B_flat,rows_division[my_cord],n);
-    printf("Proc: %d\n", my_cord); 
-    LU_decomposition(p,B,my_cord,n, rows_division, ring_comm);
-    if ( 1 ) {
-      MPI_Finalize();
-      return 0;
-    }
-   
+    LU_decomposition(p,B,my_cord,n, rows_division, ring_comm); 
     partial_det = 1;
     for ( i = 0; i < rows_division[my_cord]; i++ ) {
-      partial_det = partial_det*B[i][i];
+      partial_det = partial_det*B[i][i + displs[my_cord]/n];
     }
     // apply reduce operation (MPI_SUM) on the root processor
     MPI_Reduce(&partial_det, &result, 1, MPI_FLOAT, MPI_PROD, root_rank, ring_comm);
@@ -265,12 +251,13 @@ void LU_decomposition(
     MPI_Cart_rank(comm, &k, &rank_src);
     MPI_Bcast(B_flat, rows_division[k]*n, MPI_FLOAT, rank_src, comm);
     B = deflattenize_matrix(B_flat, rows_division[k], n);
-    compute_extern(A, rows_division[my_cord], n, B, head_offset_row, rows_division[k]);
+    for ( i = 0; i < n; i++ )
+      printf("%d %d %.2f\n", my_cord,k, B[0][i]);
+    compute_extern(A, rows_division[my_cord], n, B, head_offset_row, rows_division[k],my_cord);
     free(B);
   }
   head_offset_row += rows_division[k-1];
-  //compute_intern(A,rows_division[my_cord],n,head_offset_row);
-  printf("%d HERE!\n", my_cord);
+  compute_intern(A,rows_division[my_cord],n,head_offset_row,my_cord);
   if ( my_cord != p - 1 ) {
     free(B_flat);
     B_flat = flattenize_matrix(A,rows_division[my_cord],n);
@@ -284,6 +271,9 @@ void LU_decomposition(
     MPI_Bcast(B_flat, rows_division[k]*n, MPI_FLOAT, rank_src, comm);
   }
 
+
+  print_matrix(A,rows_division[my_cord],n);
+
   return;
 
 }
@@ -295,17 +285,21 @@ void compute_extern(
     int n,                      // Number of cols of A and B. The partition is done on the rows.
     Matrix B,                   // B Matrix = received sub-matrix.
     int head_offset_row,        // Virtual index of the first row in B.
-    int rows_B ) {              // Number of rows of B.
+    int rows_B,
+    int my_cord) {              // Number of rows of B.
 
   int i, j, k;
   int physical_row_index;
   int tail_offset_row = head_offset_row + rows_B;
+  
 
   for ( k = head_offset_row; k < tail_offset_row; k++ ) {
     physical_row_index = k - head_offset_row;
     for ( i = 0; i < rows_A; i++ ) {
+      printf("%d: A[%d][%d] = A[%d][%d]/B[%d][%d]\n",my_cord,i,k,i,k,physical_row_index,k);
       A[i][k] = A[i][k]/B[physical_row_index][k];
-      for ( j = 0; j < n; j++ ) {
+      for ( j = k+1; j < n; j++ ) {
+        printf("%d: A[%d][%d] = A[%d][%d] - A[%d][%d]*B[%d][%d]\n",my_cord,i,j,i,j,i,k,physical_row_index,j);
         A[i][j] = A[i][j] - A[i][k]*B[physical_row_index][j];
       }
     }
@@ -317,26 +311,33 @@ void compute_intern(
     Matrix A,                   // A matrix = internal LU combination. See report.
     int rows_A,                 // Number of rows of A. 
     int n,                      // Number of cols of A.
-    int head_offset_row) {      // Virtual index of the first row of A
+    int head_offset_row,
+    int my_cord) {      // Virtual index of the first row of A
 
   int i,j,k;
   float sum;
- 
+
 
   for ( i = 1 + head_offset_row; i < head_offset_row + rows_A; i++ ) {
     for ( j = head_offset_row; j < n; j++ ) {
       sum = 0;
       if ( j < i ) {
         for ( k = head_offset_row; k < j; k++ ) {
+          printf("%d: sum += A[%d][%d]*A[%d][%d]\n", my_cord, i - head_offset_row,k,k-head_offset_row,j);
           sum += A[i - head_offset_row][k]*A[k-head_offset_row][j];
         }
+        printf("%d: A[%d][%d] = (A[%d][%d] - sum)/A[%d][%d]\n",
+                my_cord,i - head_offset_row,j, i - head_offset_row,j, j - head_offset_row,j);
         A[i - head_offset_row][j] 
           = (A[i - head_offset_row][j] - sum)/A[j - head_offset_row][j];
       } else {
         for ( k = head_offset_row; k < i; k++ ) {
+          printf("%d: sum += A[%d][%d]*A[%d][%d]\n", my_cord, i - head_offset_row,k,k-head_offset_row,j);
           sum += A[i- head_offset_row][k]*A[k - head_offset_row][j];
         }
-        A[i][j] = A[i][j] - sum;
+        printf("%d: A[%d][%d] = (A[%d][%d] - sum)\n",
+                my_cord,i - head_offset_row,j, i - head_offset_row,j);
+        A[i - head_offset_row][j] = A[i - head_offset_row][j] - sum;
       }
     }
   }
