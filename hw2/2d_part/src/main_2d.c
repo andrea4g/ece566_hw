@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
   int root_rank,my_rank;
   int my_cord[2], root_cord[2];
   int n,p;
-  int i,j,iteration;
+  int i,j,iteration,m,l,k;
   float result,partial_det;
   int rows_per_proc,reminder;
   double time_vector[N_ITERATIONS],deviation;
@@ -91,15 +91,15 @@ int main(int argc, char** argv) {
   // Assign to the root the reminder
   for ( i = 0; i < p; i++ ) {
     sendcounts[i] = n*n/p;
-    MPI_Cart_coords(mesh_comm, i, 2, other_cord);
-    displs[i] = (i*3 + j)*n*n/p;
+    MPI_Cart_coords(mesh_comm, i, 2, p_cord);
+    displs[i] = (p_cord[0]*3 + p_cord[1])*n*n/p;
   }
 
   // Cordinates of the root process
   root_cord[0] = 0;
   root_cord[1] = 0;
   // get the rank of root processor in the topology
-  MPI_Cart_rank(ring_comm, &root_cord, &root_rank);
+  MPI_Cart_rank(mesh_comm, root_cord, &root_rank);
 
   // if it is the root processor
   if ( my_rank == root_rank) {
@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
     // scatter the data from source to all the processors
     MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_rank], MPI_FLOAT, root_rank, mesh_comm);
     B = deflattenize_matrix(B_flat,n/sr_p,n/sr_p);
-    LU_decomposition(p,B,my_cord,n, rows_division, ring_comm); 
+    LU_decomposition(p,B,my_cord,n, rows_division, mesh_comm); 
     partial_det = 1;
 
 /*---------------------------------------------------------------------------------------------------------------------------*/
@@ -147,7 +147,7 @@ int main(int argc, char** argv) {
       partial_det = partial_det*B[i][i + displs[my_cord]/n];
     }
     // apply reduce operation (MPI_SUM) on the root processor
-    MPI_Reduce(&partial_det, &result, 1, MPI_FLOAT, MPI_PROD, root_rank, ring_comm);
+   // MPI_Reduce(&partial_det, &result, 1, MPI_FLOAT, MPI_PROD, root_rank, ring_comm);
     // save final time of the task
     final_time = MPI_Wtime();
     if ( my_rank == root_rank) {
