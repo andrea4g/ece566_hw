@@ -352,7 +352,7 @@ float compute_det_serial(Matrix A, int n) {
   int i,j;
   Matrix B;
   float det;
-  B = allocate_zero_matrix(n);
+  B = allocate_zero_matrix(n,n);
 
   for ( i = 0; i < n; i++ ) {
     for ( j = 0; j < n; j++ ) {
