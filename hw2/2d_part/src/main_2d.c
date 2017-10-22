@@ -68,9 +68,8 @@ int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   // save the number of processors
   MPI_Comm_size(MPI_COMM_WORLD, &p);
-
+  // Compute the square root.
   sr_p = square_root(p);
-
   // save the number of rows and cols for which each processor is in charge
   rows_per_proc = n / sr_p;
 
@@ -139,7 +138,7 @@ int main(int argc, char** argv) {
     // scatter the data from source to all the processors
     MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_rank], MPI_FLOAT, root_rank, mesh_comm);
     B = deflattenize_matrix(B_flat,n/sr_p,n/sr_p);
-    LU_decomposition(p,sr_p,B,my_cord,n, rows_division, mesh_comm); 
+    LU_decomposition(p,sr_p,B,my_cord,ni/sr_p, rows_division, mesh_comm); 
     partial_det = 1;
 
 /*---------------------------------------------------------------------------------------------------------------------------*/
