@@ -17,9 +17,16 @@ Matrix allocate_zero_matrix(int rows, int cols);
 Flat_matrix flattenize_matrix(Matrix A, int rows, int cols);
 Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols );
 void print_matrix(Matrix A, int rows, int cols);
-void compute_intern(Matrix A, int rows_A, int n, int head_offset_row, int my_cord);
-void compute_extern( Matrix A, int rows_A, int n, Matrix B, int head_offset_row, int rows_B,int my_cord );
-void LU_decomposition( int p, Matrix A, int* my_cord, int n, int* rows_division, MPI_Comm comm);
+void LU_decomposition( int p, int sr_p, Matrix A, int* my_cord, int n, int* rows_division, MPI_Comm comm);
+
+void compute_intern(Matrix A,int n);
+void compute_only_left(Matrix A, Matrix B, int n);
+void compute_up_left(Matrix A, Matrix B, Matrix C, int n);
+void compute_only_up(Matrix A, Matrix B, int n);
+void send_on_col(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int srt_col);
+void receive(MPI_Comm mesh_comm, int col, int row, Matrix mailbox, int n);
+void send_on_row(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int srt_col);
+
 void LU_decomposition_serial(Matrix A, int n);
 float compute_det_serial(Matrix A, int n);
 int square_root(int p);
@@ -132,7 +139,7 @@ int main(int argc, char** argv) {
     // scatter the data from source to all the processors
     MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_rank], MPI_FLOAT, root_rank, mesh_comm);
     B = deflattenize_matrix(B_flat,n/sr_p,n/sr_p);
-    LU_decomposition(p,B,my_cord,n, rows_division, mesh_comm); 
+    LU_decomposition(p,sr_p,B,my_cord,n, rows_division, mesh_comm); 
     partial_det = 1;
 
 /*---------------------------------------------------------------------------------------------------------------------------*/
@@ -242,6 +249,7 @@ Flat_matrix flattenize_matrix(Matrix A, int rows, int cols) {
 
 void LU_decomposition(
     int p,                      // Number of processors.
+    int sr_p,                   // Square root number of procs.
     Matrix A,                   // A matrix.
     int* my_cord,               // Cordinates of this processor.
     int n,                      // Number of cols of A.
@@ -263,24 +271,24 @@ void LU_decomposition(
     receive(comm, k, my_row, mailbox_up, n);
     if ( my_col == k ) {
       compute_only_up(A, mailbox_up, n);
-      send_on_row(A, n, my_row, my_col);
+      send_on_row(comm, A, n, sr_p, my_row, my_col);
     } else {
-      receive(my_row,k,mailbox_left);
+      receive(comm, my_row,k,mailbox_left,n);
       compute_up_left(A,mailbox_left,mailbox_up,n);
     }
   }
   if ( my_col == k ) {
     compute_intern(A,n);
     if ( (my_row < (p - 1)) && (my_col < p -1 )) {
-      send_on_row(A, n, my_row, my_col);
-      send_on_col(A, n, my_row, my_col);
+      send_on_row(comm, A, n, sr_p, my_row, my_col);
+      send_on_col(comm, A, n, sr_p, my_row, my_col);
     }
   }
   if ( my_col > k ) {
-    receive(my_row,k,mailbox_left);
+    receive(comm, k, my_row, mailbox_left, n);
     compute_only_left(A,mailbox_left,n);
     if ( my_row < p - 1 ) {
-      send_on_col(A, n, my_row, my_col);
+      send_on_col(comm, A, n, sr_p,my_row, my_col);
     }
   }
 
@@ -293,12 +301,12 @@ void send_on_row(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int
   int i, dest_rank;
   int dest_cord[2];
 
-  A_flat = flattenize(A,n,n);
+  A_flat = flattenize_matrix(A,n,n);
 
   dest_cord[0] = srt_row;
   for ( i = srt_col + 1; i < sr_p; i++ ) {
     dest_cord[1] = i;
-    MPI_Cart_Cords(mesh_comm, dest_cord, &dest_rank)
+    MPI_Cart_rank(mesh_comm, dest_cord, &dest_rank);
     MPI_Send(A_flat, n*n, MPI_FLOAT, dest_rank, 0, mesh_comm);
   }
   free(A_flat);
@@ -307,18 +315,19 @@ void send_on_row(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int
 }
 
 
-void receive(MPI_Comm mesh_comm, int col, int row, Matrix mailbox, n) {
+void receive(MPI_Comm mesh_comm, int col, int row, Matrix mailbox, int n) {
 
   Flat_matrix A_flat;
   int i, j, k, src_rank;
   int src_cord[2];
+  MPI_Status status;
 
-  A_flat = flattenize(A,n,n);
+  A_flat = (Flat_matrix) malloc(n*n*sizeof(float));
 
   src_cord[0] = row;
   src_cord[1] = col;
-  MPI_Cart_Cords(mesh_comm, src_cord, &src_rank)
-  MPI_Recv(A_flat, n*n, MPI_FLOAT, src_rank, 0, mesh_comm, null);
+  MPI_Cart_rank(mesh_comm, src_cord, &src_rank);
+  MPI_Recv(A_flat, n*n, MPI_FLOAT, src_rank, 0, mesh_comm, &status);
 
   k = 0;
   for ( i = 0; i < n; i++ ) {
@@ -343,13 +352,14 @@ void send_on_col(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int
 
   Flat_matrix A_flat;
   int i,dest_rank;
+  int dest_cord[2];
 
-  A_flat = flattenize(A,n,n);
+  A_flat = flattenize_matrix(A,n,n);
 
   dest_cord[1] = srt_col;
   for ( i = srt_row + 1; i < sr_p; i++ ) {
     dest_cord[0] = i;
-    MPI_Cart_Cords(mesh_comm, dest_cord, &dest_rank)
+    MPI_Cart_rank(mesh_comm, dest_cord, &dest_rank);
     MPI_Send(A_flat, n*n, MPI_FLOAT, dest_rank, 0, mesh_comm);
   }
   free(A_flat);
@@ -402,6 +412,7 @@ void compute_up_left(Matrix A, Matrix B, Matrix C, int n) {
 void compute_only_left(Matrix A, Matrix B, int n) {
 
   int i,j,k;
+  float sum;
 
   for ( i = 0; i < n; i++ ) {
     for ( j = 0; j < n; j++ ) {
@@ -410,9 +421,9 @@ void compute_only_left(Matrix A, Matrix B, int n) {
         sum += B[i][k]*A[k][j];
       }
         A[i][j] = A[i][j] - sum;
-      }
     }
   }
+ 
 
   return;
 
@@ -431,7 +442,7 @@ void compute_intern(Matrix A,int n) {
         for ( k = 0; k < j; k++ ) {
           sum += A[i][k]*A[k][j];
         }
-      A[i][j] = (A[i][j] - sum)/A[j][j]
+      A[i][j] = (A[i][j] - sum)/A[j][j];
       } else {
         for ( k = 0; k < i; k++ ) {
           sum += A[i][k]*A[k][j];
