@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l nodes=2:ppn=2,walltime=1:00 
+#PBS -l nodes=2:ppn=2,walltime=3:00 
 #PBS -N det_1d_job
 #PBS -q edu_shared
 
@@ -9,5 +9,5 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/1d_det 16
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/1d_det 5
 

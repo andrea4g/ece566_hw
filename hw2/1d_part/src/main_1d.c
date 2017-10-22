@@ -3,7 +3,7 @@
 #include <time.h>
 #include <mpi.h>
 
-#define N_ITERATIONS 1
+#define N_ITERATIONS 10
 #define DEBUG 1
 
 /*-------------------------------TYPES DEFINITION-----------------------------*/
@@ -94,10 +94,10 @@ int main(int argc, char** argv) {
     // allocate the data
     A = allocate_zero_matrix(n,n);
     // declare the seed
-    srand(time(0));
+    srand(time(NULL));
     for (i = 0; i < n; i++) {
       for ( j = 0; j < n; j++ ) {
-        A[i][j] = rand() % 6;
+        A[i][j] = rand() % 10 + 1;
       }
     }
     A_flat = flattenize_matrix(A, n,n);
@@ -126,7 +126,8 @@ int main(int argc, char** argv) {
     final_time = MPI_Wtime();
     if ( my_rank == root_rank) {
     #if DEBUG
-      printf("DET: %f\n", result);
+      printf("DET serial: %f\n", compute_det_serial(A,n));   
+      printf("DET parallel: %f\n", result);
     #endif
       // and free the data array dinamically allocated
     }
@@ -253,8 +254,6 @@ void LU_decomposition(
     MPI_Cart_rank(comm, &k, &rank_src);
     MPI_Bcast(B_flat, rows_division[k]*n, MPI_FLOAT, rank_src, comm);
     B = deflattenize_matrix(B_flat, rows_division[k], n);
-    for ( i = 0; i < n; i++ )
-      printf("%d %d %.2f\n", my_cord,k, B[0][i]);
     compute_extern(A, rows_division[my_cord], n, B, head_offset_row, rows_division[k],my_cord);
     free(B);
   }
@@ -272,9 +271,6 @@ void LU_decomposition(
     MPI_Cart_rank(comm, &k, &rank_src);
     MPI_Bcast(B_flat, rows_division[k]*n, MPI_FLOAT, rank_src, comm);
   }
-
-
-  print_matrix(A,rows_division[my_cord],n);
 
   return;
 
@@ -298,10 +294,10 @@ void compute_extern(
   for ( k = head_offset_row; k < tail_offset_row; k++ ) {
     physical_row_index = k - head_offset_row;
     for ( i = 0; i < rows_A; i++ ) {
-      printf("%d: A[%d][%d] = A[%d][%d]/B[%d][%d]\n",my_cord,i,k,i,k,physical_row_index,k);
+      //printf("%d: A[%d][%d] = A[%d][%d]/B[%d][%d]\n",my_cord,i,k,i,k,physical_row_index,k);
       A[i][k] = A[i][k]/B[physical_row_index][k];
       for ( j = k+1; j < n; j++ ) {
-        printf("%d: A[%d][%d] = A[%d][%d] - A[%d][%d]*B[%d][%d]\n",my_cord,i,j,i,j,i,k,physical_row_index,j);
+        //printf("%d: A[%d][%d] = A[%d][%d] - A[%d][%d]*B[%d][%d]\n",my_cord,i,j,i,j,i,k,physical_row_index,j);
         A[i][j] = A[i][j] - A[i][k]*B[physical_row_index][j];
       }
     }
@@ -325,20 +321,20 @@ void compute_intern(
       sum = 0;
       if ( j < i ) {
         for ( k = head_offset_row; k < j; k++ ) {
-          printf("%d: sum += A[%d][%d]*A[%d][%d]\n", my_cord, i - head_offset_row,k,k-head_offset_row,j);
+          //printf("%d: sum += A[%d][%d]*A[%d][%d]\n", my_cord, i - head_offset_row,k,k-head_offset_row,j);
           sum += A[i - head_offset_row][k]*A[k-head_offset_row][j];
         }
-        printf("%d: A[%d][%d] = (A[%d][%d] - sum)/A[%d][%d]\n",
-                my_cord,i - head_offset_row,j, i - head_offset_row,j, j - head_offset_row,j);
+        //printf("%d: A[%d][%d] = (A[%d][%d] - sum)/A[%d][%d]\n",
+        //        my_cord,i - head_offset_row,j, i - head_offset_row,j, j - head_offset_row,j);
         A[i - head_offset_row][j] 
           = (A[i - head_offset_row][j] - sum)/A[j - head_offset_row][j];
       } else {
         for ( k = head_offset_row; k < i; k++ ) {
-          printf("%d: sum += A[%d][%d]*A[%d][%d]\n", my_cord, i - head_offset_row,k,k-head_offset_row,j);
+          //printf("%d: sum += A[%d][%d]*A[%d][%d]\n", my_cord, i - head_offset_row,k,k-head_offset_row,j);
           sum += A[i- head_offset_row][k]*A[k - head_offset_row][j];
         }
-        printf("%d: A[%d][%d] = (A[%d][%d] - sum)\n",
-                my_cord,i - head_offset_row,j, i - head_offset_row,j);
+        //printf("%d: A[%d][%d] = (A[%d][%d] - sum)\n",
+        //        my_cord,i - head_offset_row,j, i - head_offset_row,j);
         A[i - head_offset_row][j] = A[i - head_offset_row][j] - sum;
       }
     }
