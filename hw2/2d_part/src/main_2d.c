@@ -3,8 +3,8 @@
 #include <time.h>
 #include <mpi.h>
 
-#define N_ITERATIONS 50
-#define DEBUG 0
+#define N_ITERATIONS 1
+#define DEBUG 1
 
 /*-------------------------------TYPES DEFINITION-----------------------------*/
 typedef float** Matrix;
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
   int my_cord[2], root_cord[2];
   int n,p;
   int i,j,iteration,m,l,k;
-  float result,partial_det;
+  float result,partial_det,mail_box;
   int rows_per_proc,reminder;
   double time_vector[N_ITERATIONS],deviation;
   double average_time, final_time, initial_time;
@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
   int dims[2];
   Matrix A,B;
   Flat_matrix A_flat, B_flat;
-
+  MPI_Status status;
   int sr_p;
   
   int p_cord[2];
@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
   for ( i = 0; i < p; i++ ) {
     sendcounts[i] = n*n/p;
     MPI_Cart_coords(mesh_comm, i, 2, p_cord);
-    displs[i] = (p_cord[0]*3 + p_cord[1])*n*n/p;
+    displs[i] = (p_cord[0]*sr_p + p_cord[1])*n*n/p;
   }
 
   // Cordinates of the root process
@@ -138,15 +138,43 @@ int main(int argc, char** argv) {
     // scatter the data from source to all the processors
     MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_rank], MPI_FLOAT, root_rank, mesh_comm);
     B = deflattenize_matrix(B_flat,n/sr_p,n/sr_p);
-    LU_decomposition(p,sr_p,B,my_cord,ni/sr_p, rows_division, mesh_comm); 
+    for ( i = 0; i < n/sr_p; i++ ) {
+      printf("%d,%d: ", my_cord[0], my_cord[1]);
+      for ( j = 0; j < n/sr_p; j++ ) {
+        printf("%.2f\t",B[i][j]);
+      }
+      printf("\n");
+    }
+    //if ( 1 ) {
+    //  MPI_Finalize();
+    //  return 0;
+    // }
+    LU_decomposition(p,sr_p,B,my_cord,n, rows_division, mesh_comm); 
+    //if ( 1 ) {
+    //  MPI_Finalize();
+    //  return 0;
+    // }
     partial_det = 1;
 
+    if ( (my_cord[0] == my_cord[1])  ) {
+      for ( i = 0; i < n/sr_p; i++ ) {
+        partial_det = partial_det*B[i][i];
+      }
+      if ( my_rank != root_rank ) {
+        MPI_Send(&partial_det,1,MPI_FLOAT,root_rank,0,mesh_comm);
+      }
+    }
 /*---------------------------------------------------------------------------------------------------------------------------*/
     // apply reduce operation (MPI_SUM) on the root processor
    // MPI_Reduce(&partial_det, &result, 1, MPI_FLOAT, MPI_PROD, root_rank, ring_comm);
     // save final time of the task
     final_time = MPI_Wtime();
     if ( my_rank == root_rank) {
+      for ( i = 1; i < sr_p; i++) {
+        MPI_Recv(&mail_box,1,MPI_FLOAT,MPI_ANY_SOURCE,0,mesh_comm,&status);
+        partial_det = partial_det*mail_box;
+      }
+      result = partial_det;
     #if DEBUG
       printf("DET serial: %f\n", compute_det_serial(A,n));   
       printf("DET parallel: %f\n", result);
@@ -184,9 +212,9 @@ void print_matrix(Matrix A, int rows, int cols) {
   printf("R: %d, C: %d\n", rows, cols);
   for (i = 0; i < rows; i++ ) {
     for ( j = 0; j < cols; j++ ) {
-      printf("%.2f\t", A[i][j]);
+      fprintf(stderr,"%.2f\t", A[i][j]);
     }
-    printf("\n");
+    fprintf(stderr,"\n");
   }
   return;
 }
@@ -260,36 +288,42 @@ void LU_decomposition(
 
   Matrix mailbox_up, mailbox_left;
 
-  mailbox_up = allocate_zero_matrix(n,n);
-  mailbox_left = allocate_zero_matrix(n,n);
+  mailbox_up = allocate_zero_matrix(n/sr_p,n/sr_p);
+  mailbox_left = allocate_zero_matrix(n/sr_p,n/sr_p);
 
   my_row = my_cord[0];
   my_col = my_cord[1];
 
   for ( k = 0; (k < my_row) && (k <= my_col); k++ ) {
-    receive(comm, k, my_row, mailbox_up, n);
+    receive(comm, my_col, k, mailbox_up, n/sr_p);
     if ( my_col == k ) {
-      compute_only_up(A, mailbox_up, n);
-      send_on_row(comm, A, n, sr_p, my_row, my_col);
+      compute_only_up(A, mailbox_up, n/sr_p);
+      send_on_row(comm, A, n/sr_p, sr_p, my_row, my_col);
     } else {
-      receive(comm, my_row,k,mailbox_left,n);
-      compute_up_left(A,mailbox_left,mailbox_up,n);
+      receive(comm, k, my_row,mailbox_left,n/sr_p);
+      compute_up_left(A,mailbox_left,mailbox_up,n/sr_p);
+      //printf("P[%d][%d] here\n", my_row, my_col); 
     }
   }
   if ( my_col == k ) {
-    compute_intern(A,n);
-    if ( (my_row < (p - 1)) && (my_col < p -1 )) {
-      send_on_row(comm, A, n, sr_p, my_row, my_col);
-      send_on_col(comm, A, n, sr_p, my_row, my_col);
+    printf("HERE\n");
+    compute_intern(A,n/sr_p);
+    print_matrix(A, n/sr_p, n/sr_p);
+    if ( (my_row < (sr_p - 1)) && (my_col < sr_p -1 )) {
+      send_on_row(comm, A, n/sr_p, sr_p, my_row, my_col);
+      send_on_col(comm, A, n/sr_p, sr_p, my_row, my_col);
     }
   }
   if ( my_col > k ) {
-    receive(comm, k, my_row, mailbox_left, n);
-    compute_only_left(A,mailbox_left,n);
-    if ( my_row < p - 1 ) {
-      send_on_col(comm, A, n, sr_p,my_row, my_col);
+    receive(comm, k, my_row, mailbox_left, n/sr_p);
+    compute_only_left(A,mailbox_left,n/sr_p);
+    if ( my_row < sr_p - 1 ) {
+      send_on_col(comm, A, n/sr_p, sr_p,my_row, my_col);
     }
   }
+
+  
+  //printf("P[%d][%d] HHHere\n", my_row, my_col); 
 
   return;
 }
@@ -382,7 +416,7 @@ void compute_only_up(Matrix A, Matrix B, int n) {
       for ( k = 0; k < j; k++ ) {
         sum += A[i][k]*B[k][j];
       }
-      A[i][j] = A[i][j]/B[j][j];
+      A[i][j] = (A[i][j]-sum)/B[j][j];
     }
   }
 
@@ -434,10 +468,12 @@ void compute_intern(Matrix A,int n) {
   int i,j,k;
   float sum;
 
+  print_matrix(A,n,n);
+
   for ( i = 1; i < n; i++ ) {
     for ( j = 0; j < n; j++ ) {
       sum = 0;
-      if ( i < j ) {
+      if ( j < i ) {
         for ( k = 0; k < j; k++ ) {
           sum += A[i][k]*A[k][j];
         }
