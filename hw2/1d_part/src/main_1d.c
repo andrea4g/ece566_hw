@@ -9,8 +9,6 @@
 /*-------------------------------TYPES DEFINITION-----------------------------*/
 typedef float** Matrix;
 typedef float*  Flat_matrix;
-/*----------------------------------------------------------------------------*/
-
 
 /*-------------------------------FUNCTION PROTOTYPES--------------------------*/
 Matrix allocate_zero_matrix(int rows, int cols);
@@ -22,10 +20,8 @@ void compute_extern( Matrix A, int rows_A, int n, Matrix B, int head_offset_row,
 void LU_decomposition( int p, Matrix A, int my_cord, int n, int* rows_division, MPI_Comm comm);
 void LU_decomposition_serial(Matrix A, int n);
 float compute_det_serial(Matrix A, int n);
-/*----------------------------------------------------------------------------*/
 
-
-
+/*--------------------------------MAIN----------------------------------------*/
 int main(int argc, char** argv) {
 
   // variable declaration
@@ -44,7 +40,7 @@ int main(int argc, char** argv) {
   int* rows_division;
   int* sendcounts;
   int* displs;
-  Matrix A,B;  
+  Matrix A,B;
   Flat_matrix A_flat, B_flat;
 
   // save in n the dimension of theMatrix
@@ -105,7 +101,7 @@ int main(int argc, char** argv) {
     print_matrix(A,n,n);
   #endif
   }
-  
+
   B_flat = (Flat_matrix) malloc(sendcounts[my_cord]*sizeof(float));
 
   average_time = 0;
@@ -115,7 +111,7 @@ int main(int argc, char** argv) {
     // scatter the data from source to all the processors
     MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_cord], MPI_FLOAT, root_rank, ring_comm);
     B = deflattenize_matrix(B_flat,rows_division[my_cord],n);
-    LU_decomposition(p,B,my_cord,n, rows_division, ring_comm); 
+    LU_decomposition(p,B,my_cord,n, rows_division, ring_comm);
     partial_det = 1;
     for ( i = 0; i < rows_division[my_cord]; i++ ) {
       partial_det = partial_det*B[i][i + displs[my_cord]/n];
@@ -126,7 +122,7 @@ int main(int argc, char** argv) {
     final_time = MPI_Wtime();
     if ( my_rank == root_rank) {
     #if DEBUG
-      printf("DET serial: %f\n", compute_det_serial(A,n));   
+      printf("DET serial: %f\n", compute_det_serial(A,n));
       printf("DET parallel: %f\n", result);
     #endif
       // and free the data array dinamically allocated
@@ -135,7 +131,6 @@ int main(int argc, char** argv) {
     average_time += time_vector[iteration];
   }
   average_time = average_time/N_ITERATIONS;
-
 
   if ( my_rank == root_rank ) {
     deviation = 0;
@@ -146,15 +141,13 @@ int main(int argc, char** argv) {
     printf("%f, %f\n", average_time, deviation);
   }
 
-
   // close the MPI environment
   MPI_Finalize();
 
   return 0;
-
 }
 
-
+/*-------------------------------FUNCTIONS------------------------------------*/
 void print_matrix(Matrix A, int rows, int cols) {
 
   int i,j;
@@ -201,7 +194,6 @@ Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols ) {
   }
 
   return mat;
-
 }
 
 
@@ -219,9 +211,7 @@ Flat_matrix flattenize_matrix(Matrix A, int rows, int cols) {
   }
 
   return fmat;
-
 }
-
 
 
 void LU_decomposition(
@@ -237,7 +227,7 @@ void LU_decomposition(
   int head_offset_row = 0;
   Matrix B;
   Flat_matrix A_flat, B_flat;
-  
+
   for ( i = 1; i < p; i++ ) {
     if ( rows_division[i] > max_rows ) {
       max_rows = rows_division[i];
@@ -273,7 +263,6 @@ void LU_decomposition(
   }
 
   return;
-
 }
 
 
@@ -289,7 +278,7 @@ void compute_extern(
   int i, j, k;
   int physical_row_index;
   int tail_offset_row = head_offset_row + rows_B;
-  
+
 
   for ( k = head_offset_row; k < tail_offset_row; k++ ) {
     physical_row_index = k - head_offset_row;
@@ -302,12 +291,12 @@ void compute_extern(
       }
     }
   }
-
 }
+
 
 void compute_intern(
     Matrix A,                   // A matrix = internal LU combination. See report.
-    int rows_A,                 // Number of rows of A. 
+    int rows_A,                 // Number of rows of A.
     int n,                      // Number of cols of A.
     int head_offset_row,
     int my_cord) {      // Virtual index of the first row of A
@@ -326,7 +315,7 @@ void compute_intern(
         }
         //printf("%d: A[%d][%d] = (A[%d][%d] - sum)/A[%d][%d]\n",
         //        my_cord,i - head_offset_row,j, i - head_offset_row,j, j - head_offset_row,j);
-        A[i - head_offset_row][j] 
+        A[i - head_offset_row][j]
           = (A[i - head_offset_row][j] - sum)/A[j - head_offset_row][j];
       } else {
         for ( k = head_offset_row; k < i; k++ ) {
@@ -340,7 +329,6 @@ void compute_intern(
     }
   }
 }
-
 
 
 float compute_det_serial(Matrix A, int n) {
@@ -359,7 +347,7 @@ float compute_det_serial(Matrix A, int n) {
   LU_decomposition_serial(B, n);
   det = 1;
   for (i = 0; i < n; i++ ) {
-    det = det*B[i][i]; 
+    det = det*B[i][i];
   }
 
   free(B);
@@ -388,8 +376,5 @@ void LU_decomposition_serial(Matrix A, int n) {
       }
     }
   }
-
-
   return;
 }
-

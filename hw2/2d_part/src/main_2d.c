@@ -9,8 +9,6 @@
 /*-------------------------------TYPES DEFINITION-----------------------------*/
 typedef float** Matrix;
 typedef float*  Flat_matrix;
-/*----------------------------------------------------------------------------*/
-
 
 /*-------------------------------FUNCTION PROTOTYPES--------------------------*/
 Matrix allocate_zero_matrix(int rows, int cols);
@@ -30,8 +28,8 @@ void send_on_row(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int
 void LU_decomposition_serial(Matrix A, int n);
 float compute_det_serial(Matrix A, int n);
 int square_root(int p);
-/*----------------------------------------------------------------------------*/
 
+/*------------------------------------MAIN------------------------------------*/
 int main(int argc, char** argv) {
 
   // variable declaration
@@ -78,7 +76,7 @@ int main(int argc, char** argv) {
   MPI_Cart_create(MPI_COMM_WORLD, 2, dims, period, reorder, &mesh_comm);
   // save the rank of each processor in rank
   MPI_Comm_rank(mesh_comm, &my_rank);
-  // save the coordinates of each processor given the rank 
+  // save the coordinates of each processor given the rank
   MPI_Cart_coords(mesh_comm, my_rank, 2, my_cord);
 
   // Allocate vectors for SCATTERV primitive
@@ -144,15 +142,7 @@ int main(int argc, char** argv) {
       printf("\n");
     }
   #endif
-    //if ( 1 ) {
-    //  MPI_Finalize();
-    //  return 0;
-    // }
-    LU_decomposition(p,sr_p,B,my_cord,n, rows_division, mesh_comm); 
-    //if ( 1 ) {
-    //  MPI_Finalize();
-    //  return 0;
-    // }
+    LU_decomposition(p,sr_p,B,my_cord,n, rows_division, mesh_comm);
     partial_det = 1;
 
     if ( (my_cord[0] == my_cord[1])  ) {
@@ -163,7 +153,6 @@ int main(int argc, char** argv) {
         MPI_Send(&partial_det,1,MPI_FLOAT,root_rank,0,mesh_comm);
       }
     }
-/*---------------------------------------------------------------------------------------------------------------------------*/
     // apply reduce operation (MPI_SUM) on the root processor
     // MPI_Reduce(&partial_det, &result, 1, MPI_FLOAT, MPI_PROD, root_rank, ring_comm);
     // save final time of the task
@@ -195,15 +184,13 @@ int main(int argc, char** argv) {
     printf("%f, %f\n", average_time, deviation);
   }
 
-
   // close the MPI environment
   MPI_Finalize();
 
   return 0;
-
 }
 
-
+/*-------------------------------FUNCTIONS------------------------------------*/
 void print_matrix(Matrix A, int rows, int cols) {
 
   int i,j;
@@ -250,7 +237,6 @@ Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols ) {
   }
 
   return mat;
-
 }
 
 
@@ -268,9 +254,7 @@ Flat_matrix flattenize_matrix(Matrix A, int rows, int cols) {
   }
 
   return fmat;
-
 }
-
 
 
 void LU_decomposition(
@@ -324,12 +308,9 @@ void LU_decomposition(
       send_on_col(comm, A, n/sr_p, sr_p,my_row, my_col);
     }
   }
-
-
-  //printf("P[%d][%d] HHHere\n", my_row, my_col);
-
   return;
 }
+
 
 void send_on_row(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int srt_col) {
 
@@ -378,11 +359,6 @@ void receive(MPI_Comm mesh_comm, int col, int row, Matrix mailbox, int n) {
 }
 
 
-
-
-
-
-
 void send_on_col(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int srt_col) {
 
   Flat_matrix A_flat;
@@ -398,12 +374,9 @@ void send_on_col(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int
     MPI_Send(A_flat, n*n, MPI_FLOAT, dest_rank, 0, mesh_comm);
   }
   free(A_flat);
+
   return;
 }
-
-
-
-
 
 
 void compute_only_up(Matrix A, Matrix B, int n) {
@@ -425,13 +398,6 @@ void compute_only_up(Matrix A, Matrix B, int n) {
 }
 
 
-
-
-
-
-
-
-
 void compute_up_left(Matrix A, Matrix B, Matrix C, int n) {
 
   int i,j,k;
@@ -448,15 +414,6 @@ void compute_up_left(Matrix A, Matrix B, Matrix C, int n) {
   }
   return;
 }
-
-
-
-
-
-
-
-
-
 
 
 void compute_only_left(Matrix A, Matrix B, int n) {
@@ -476,10 +433,6 @@ void compute_only_left(Matrix A, Matrix B, int n) {
 
   return;
 }
-
-
-
-
 
 
 void compute_intern(Matrix A,int n) {
@@ -507,14 +460,7 @@ void compute_intern(Matrix A,int n) {
   }
 
   return;
-
 }
-
-
-
-
-
-
 
 
 float compute_det_serial(Matrix A, int n) {
@@ -563,11 +509,8 @@ void LU_decomposition_serial(Matrix A, int n) {
     }
   }
 
-
   return;
 }
-
-
 
 
 int square_root(int p) {
@@ -585,5 +528,4 @@ int square_root(int p) {
   }
 
   return result;
-
 }
