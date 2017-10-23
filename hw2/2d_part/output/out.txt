@@ -1,47 +1,48 @@
-mpitest_126_16.out, 
-mpitest_126_36.out, 
-mpitest_126_49.out, 
-mpitest_126_4.out, 
-mpitest_126_64.out, 
-mpitest_126_9.out, 
-mpitest_168_16.out, 
-mpitest_168_36.out, 
-mpitest_168_49.out, 
-mpitest_168_4.out, 
-mpitest_168_64.out, 
-mpitest_168_9.out, 
-mpitest_210_16.out, 
-mpitest_210_36.out, 
-mpitest_210_49.out, 
-mpitest_210_4.out, 
-mpitest_210_64.out, 
-mpitest_210_9.out, 
-mpitest_255_16.out, 
-mpitest_255_36.out, 
-mpitest_255_49.out, 
-mpitest_255_4.out, 
-mpitest_255_64.out, 
-mpitest_255_9.out, 
-mpitest_294_16.out, 
-mpitest_294_36.out, 
-mpitest_294_49.out, 
-mpitest_294_4.out, 
-mpitest_294_64.out, 
-mpitest_294_9.out, 
-mpitest_336_16.out, 
-mpitest_336_36.out, 
-mpitest_336_49.out, 
-mpitest_336_4.out, 
-mpitest_336_64.out, 
-mpitest_336_9.out, 
-mpitest_42_16.out, 
-mpitest_42_36.out, 
-mpitest_42_49.out, 
-mpitest_42_4.out, 
-mpitest_42_64.out, 
-mpitest_42_9.out, 
-mpitest_84_16.out, 
-mpitest_84_49.out, 
-mpitest_84_4.out, 
-mpitest_84_64.out, 
-mpitest_84_9.out, 
+mpitest_126_16.out, 0.000108, 0.000000
+mpitest_126_36.out, 0.000818, 0.000082
+mpitest_126_49.out, 0.001027, 0.000255
+mpitest_126_4.out, 0.000434, 0.000000
+mpitest_126_64.out, 0.001237, 0.000353
+mpitest_126_9.out, 0.000158, 0.000000
+mpitest_168_16.out, 0.000280, 0.000001
+mpitest_168_36.out, 0.000692, 0.000096
+mpitest_168_49.out, 0.000805, 0.000092
+mpitest_168_4.out, 0.000934, 0.000000
+mpitest_168_64.out, 0.001039, 0.000153
+mpitest_168_9.out, 0.000333, 0.000000
+mpitest_210_16.out, 0.000400, 0.000000
+mpitest_210_36.out, 0.000299, 0.000002
+mpitest_210_49.out, 0.000906, 0.000088
+mpitest_210_4.out, 0.001690, 0.000000
+mpitest_210_64.out, 0.001030, 0.000198
+mpitest_210_9.out, 0.000595, 0.000000
+mpitest_255_16.out, 0.000631, 0.000001
+mpitest_255_36.out, 0.000837, 0.000075
+mpitest_255_49.out, 0.001012, 0.000133
+mpitest_255_4.out, 0.002797, 0.000000
+mpitest_255_64.out, 0.001264, 0.000292
+mpitest_255_9.out, 0.001015, 0.000000
+mpitest_294_16.out, 0.000728, 0.000000
+mpitest_294_36.out, 0.001002, 0.000100
+mpitest_294_49.out, 0.001344, 0.000218
+mpitest_294_4.out, 0.004519, 0.000000
+mpitest_294_64.out, 0.001553, 0.000360
+mpitest_294_9.out, 0.001512, 0.000000
+mpitest_336_16.out, 0.001146, 0.000001
+mpitest_336_36.out, 0.001206, 0.000148
+mpitest_336_49.out, 0.004095, 0.000726
+mpitest_336_4.out, 0.006500, 0.000002
+mpitest_336_64.out, 0.001275, 0.000147
+mpitest_336_9.out, 0.002173, 0.000000
+mpitest_42_16.out, 0.000028, 0.000000
+mpitest_42_36.out, 0.000214, 0.000002
+mpitest_42_49.out, 0.000735, 0.000111
+mpitest_42_4.out, 0.000028, 0.000000
+mpitest_42_64.out, 0.000722, 0.000105
+mpitest_42_9.out, 0.000013, 0.000000
+mpitest_84_16.out, 0.000123, 0.000001
+mpitest_84_36.out, 0.000245, 0.000002
+mpitest_84_49.out, 0.000799, 0.000148
+mpitest_84_4.out, 0.000151, 0.000000
+mpitest_84_64.out, 0.000898, 0.000164
+mpitest_84_9.out, 0.000057, 0.000000

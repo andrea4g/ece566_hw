@@ -9,4 +9,4 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np 49 ./bin/1d_det 42
+mpirun -machinefile $PBS_NODEFILE -np 49 ./bin/2d_det 42
