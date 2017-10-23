@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l procs=9,walltime=10:00
+#PBS -N det_job
+#PBS -q edu_shared
+
+#PBS -e output/mpitest_210_9.err
+#PBS -o output/mpitest_210_9.out
+#PBS -d ./
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np 9 ./bin/1d_det 210
