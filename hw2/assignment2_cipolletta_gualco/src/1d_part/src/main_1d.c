@@ -4,7 +4,7 @@
 #include <mpi.h>
 
 #define N_ITERATIONS 50
-#define DEBUG 0
+#define DEBUG 1
 
 /*-------------------------------TYPES DEFINITION-----------------------------*/
 typedef float** Matrix;
@@ -226,7 +226,7 @@ void LU_decomposition(
   int max_rows = rows_division[0];
   int head_offset_row = 0;
   Matrix B;
-  Flat_matrix A_flat, B_flat;
+  Flat_matrix B_flat;
 
   for ( i = 1; i < p; i++ ) {
     if ( rows_division[i] > max_rows ) {

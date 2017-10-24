@@ -4,7 +4,7 @@
 #include <mpi.h>
 
 #define N_ITERATIONS 20
-#define DEBUG 0
+#define DEBUG 1
 
 /*-------------------------------TYPES DEFINITION-----------------------------*/
 typedef float** Matrix;
@@ -15,7 +15,7 @@ Matrix allocate_zero_matrix(int rows, int cols);
 Flat_matrix flattenize_matrix(Matrix A, int rows, int cols);
 Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols );
 void print_matrix(Matrix A, int rows, int cols);
-void LU_decomposition( int p, int sr_p, Matrix A, int* my_cord, int n, int* rows_division, MPI_Comm comm);
+void LU_decomposition( int p, int sr_p, Matrix A, int* my_cord, int n, MPI_Comm comm);
 
 void compute_intern(Matrix A,int n);
 void compute_only_left(Matrix A, Matrix B, int n);
@@ -41,11 +41,10 @@ int main(int argc, char** argv) {
   int n,p;
   int i,j,iteration,m,l,k;
   float result,partial_det,mail_box;
-  int rows_per_proc,reminder;
+  int rows_per_proc;
   double time_vector[N_ITERATIONS],deviation;
   double average_time, final_time, initial_time;
   // pointer declaration
-  int* rows_division;
   int* sendcounts;
   int* displs;
   int dims[2];
@@ -119,9 +118,6 @@ int main(int argc, char** argv) {
       }
     }
 
-  #if DEBUG
-    print_matrix(A,n,n);
-  #endif
   }
 
   B_flat = (Flat_matrix) malloc(n*n/p*sizeof(float));
@@ -133,16 +129,7 @@ int main(int argc, char** argv) {
     // scatter the data from source to all the processors
     MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_rank], MPI_FLOAT, root_rank, mesh_comm);
     B = deflattenize_matrix(B_flat,n/sr_p,n/sr_p);
-  #if DEBUG
-    for ( i = 0; i < n/sr_p; i++ ) {
-      printf("%d,%d: ", my_cord[0], my_cord[1]);
-      for ( j = 0; j < n/sr_p; j++ ) {
-        printf("%.2f\t",B[i][j]);
-      }
-      printf("\n");
-    }
-  #endif
-    LU_decomposition(p,sr_p,B,my_cord,n, rows_division, mesh_comm);
+    LU_decomposition(p,sr_p,B,my_cord,n, mesh_comm);
     partial_det = 1;
 
     if ( (my_cord[0] == my_cord[1])  ) {
@@ -263,7 +250,6 @@ void LU_decomposition(
     Matrix A,                   // A matrix.
     int* my_cord,               // Cordinates of this processor.
     int n,                      // Number of cols of A.
-    int* rows_division,         // How many rows for each processor.
     MPI_Comm comm) {            // Communicator.
 
   int my_row, my_col;
@@ -289,13 +275,7 @@ void LU_decomposition(
     }
   }
   if ( my_col == k ) {
-  #if DEBUG
-    printf("HERE\n");
-  #endif
     compute_intern(A,n/sr_p);
-  #if DEBUG
-    print_matrix(A, n/sr_p, n/sr_p);
-  #endif
     if ( (my_row < (sr_p - 1)) && (my_col < sr_p -1 )) {
       send_on_row(comm, A, n/sr_p, sr_p, my_row, my_col);
       send_on_col(comm, A, n/sr_p, sr_p, my_row, my_col);
@@ -439,9 +419,6 @@ void compute_intern(Matrix A,int n) {
 
   int i,j,k;
   float sum;
-#if DEBUG
-  print_matrix(A,n,n);
-#endif
   for ( i = 1; i < n; i++ ) {
     for ( j = 0; j < n; j++ ) {
       sum = 0;
