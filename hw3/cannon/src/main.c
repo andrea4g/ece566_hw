@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
   int root_rank,my_rank;
   int my_cord[2], root_cord[2];
   int n,p;
+  int exp;
   int i,j,iteration,m,l,k;
   //float result,partial_det;
   int rows_per_proc;
@@ -56,9 +57,10 @@ int main(int argc, char** argv) {
 
   int p_cord[2];
 
-  // save in n the dimension of theMatrix
+  // save in n the dimension of the Matrix
   n = atoi(argv[1]);
-
+  // save the exponent
+  exp = atoi(argv[2]);
   // Initialize MPI environment
   MPI_Init(&argc, &argv);
   // save the number of processors
@@ -106,7 +108,20 @@ int main(int argc, char** argv) {
     srand(time(NULL));
     for (i = 0; i < n; i++) {
       for ( j = 0; j < n; j++ ) {
+      #if DEBUG
         A[i][j] = 1;
+      #else
+        num = rand() % 100;
+        if (num % 3 == 0) {
+          A[i][j] = 1;
+        }
+        else if (num % 3 == 1){
+          A[i][j] = 0;
+        }
+        else if (num % 3 == 2){
+          A[i][j] = -1;
+        }
+      #endif
       }
     }
     A_flat = (Flat_matrix) malloc(n*n*sizeof(float));
