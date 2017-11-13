@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
   //printf("prima flat D\n");
   flatD = flattenize_matrix(D, rows, cols);
   //printf("quasi D\n");
-  MPI_Sendrecv_replace(&flatD, rows*cols, MPI_FLOAT, shiftdest, 1, shiftsource, 1, mesh_comm, &status);
+  MPI_Sendrecv_replace(flatD, rows*cols, MPI_FLOAT, shiftdest, 1, shiftsource, 1, mesh_comm, &status);
   //printf("dopo D\n");
   D = deflattenize_matrix(flatD, rows, cols);
   //printf("dopo deflat D\n");
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
   //printf("prima flat B\n");
   flatB = flattenize_matrix(B, rows, cols);
   //printf("quasi B\n");
-  MPI_Sendrecv_replace(&flatB, rows*cols, MPI_FLOAT, shiftdest, 1, shiftsource, 1, mesh_comm, &status);
+  MPI_Sendrecv_replace(flatB, rows*cols, MPI_FLOAT, shiftdest, 1, shiftsource, 1, mesh_comm, &status);
   //printf("dopo B\n");
   B = deflattenize_matrix(flatB, rows, cols);
   //printf("dopo deflat B\n");
@@ -201,13 +201,13 @@ int main(int argc, char** argv) {
         MPI_Cart_shift(mesh_comm, 0, -1, &rightrank, &leftrank);
         flatD = flattenize_matrix(D, rows, cols);
         printf("ciao\n");
-        MPI_Sendrecv_replace(&flatD, rows*cols, MPI_FLOAT, leftrank, 1, rightrank, 1, mesh_comm, &status);
+        MPI_Sendrecv_replace(flatD, rows*cols, MPI_FLOAT, leftrank, 1, rightrank, 1, mesh_comm, &status);
         D = deflattenize_matrix(flatD, rows, cols);
         printf("meta'\n");
         //up circ by 1
         MPI_Cart_shift(mesh_comm, 1, -1, &downrank, &uprank);
         flatB = flattenize_matrix(B, rows, cols);
-        MPI_Sendrecv_replace(&flatB, rows*cols, MPI_FLOAT, uprank, 1, downrank, 1, mesh_comm, &status);
+        MPI_Sendrecv_replace(flatB, rows*cols, MPI_FLOAT, uprank, 1, downrank, 1, mesh_comm, &status);
         B = deflattenize_matrix(flatB, rows, cols);
       }
 //    }
