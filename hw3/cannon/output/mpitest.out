@@ -1,19 +1,5 @@
-exp = 2
-exp = 2
-exp = 2
-exp = 2
-(0, 0) = 0
-(0, 0) = 0
-prima flat D
-(0, 1) = 1
-(0, 1) = 1
-prima flat D
-(1, 0) = 2
-(1, 0) = 2
-prima flat D
-(1, 1) = 3
-(1, 1) = 3
-prima flat D
+QUI
+ciao
 
 ===================================================================================
 =   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES

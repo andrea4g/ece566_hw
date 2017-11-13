@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
   Matrix A, B, D;
   Flat_matrix A_flat, B_flat;
   int sr_p;
-  MPI_Status* status;
+  MPI_Status status;
 
   int p_cord[2];
 
@@ -173,19 +173,25 @@ int main(int argc, char** argv) {
 
   int shiftsource, shiftdest;
   // Shift each rows by i on left
-  printf("(%d, %d) = %d\n", my_cord[0], my_cord[1], my_rank);
   MPI_Cart_shift(mesh_comm, 0, -my_cord[0], &shiftsource, &shiftdest);
-  printf("(%d, %d) = %d\n", my_cord[0], my_cord[1], my_rank);
-  printf("prima flat D\n");
+  //printf("prima flat D\n");
   flatD = flattenize_matrix(D, rows, cols);
-  MPI_Sendrecv_replace(&flatD, rows*cols, MPI_FLOAT, shiftdest, 1, shiftsource, 1, mesh_comm, status);
+  //printf("quasi D\n");
+  MPI_Sendrecv_replace(&flatD, rows*cols, MPI_FLOAT, shiftdest, 1, shiftsource, 1, mesh_comm, &status);
+  //printf("dopo D\n");
   D = deflattenize_matrix(flatD, rows, cols);
-  printf("dopo deflat D\n");
+  //printf("dopo deflat D\n");
   // Shift each column up by j
   MPI_Cart_shift(mesh_comm, 1, -my_cord[1], &shiftsource, &shiftdest);
+  //printf("prima flat B\n");
   flatB = flattenize_matrix(B, rows, cols);
-  MPI_Sendrecv_replace(&flatB, rows*cols, MPI_FLOAT, shiftdest, 1, shiftsource, 1, mesh_comm, status);
+  //printf("quasi B\n");
+  MPI_Sendrecv_replace(&flatB, rows*cols, MPI_FLOAT, shiftdest, 1, shiftsource, 1, mesh_comm, &status);
+  //printf("dopo B\n");
   B = deflattenize_matrix(flatB, rows, cols);
+  //printf("dopo deflat B\n");
+
+  printf("QUI\n");
 
 //  for (k = 0; k < sr_p; k++) {
 //    for (i = 0; i < sr_p; i++) {
@@ -194,12 +200,14 @@ int main(int argc, char** argv) {
         //left circ by 1
         MPI_Cart_shift(mesh_comm, 0, -1, &rightrank, &leftrank);
         flatD = flattenize_matrix(D, rows, cols);
-        MPI_Sendrecv_replace(&flatD, rows*cols, MPI_FLOAT, leftrank, 1, rightrank, 1, mesh_comm, &status[0]);
+        printf("ciao\n");
+        MPI_Sendrecv_replace(&flatD, rows*cols, MPI_FLOAT, leftrank, 1, rightrank, 1, mesh_comm, &status);
         D = deflattenize_matrix(flatD, rows, cols);
+        printf("meta'\n");
         //up circ by 1
         MPI_Cart_shift(mesh_comm, 1, -1, &downrank, &uprank);
-        flatB = flattenize_matrix(D, rows, cols);
-        MPI_Sendrecv_replace(&flatB, rows*cols, MPI_FLOAT, uprank, 1, downrank, 1, mesh_comm, &status[0]);
+        flatB = flattenize_matrix(B, rows, cols);
+        MPI_Sendrecv_replace(&flatB, rows*cols, MPI_FLOAT, uprank, 1, downrank, 1, mesh_comm, &status);
         B = deflattenize_matrix(flatB, rows, cols);
       }
 //    }
