@@ -1,5 +1,9 @@
-QUI
-ciao
+D pre invio --(0,1) - 1.000000
+D pre invio --(1,0) - 2.000000
+D pre invio --(1,1) - 3.000000
+D pre invio --(0,0) - 0.000000
+D post invio --(0,0) - 0.000000
+D post invio --(0,1) - 1.000000
 
 ===================================================================================
 =   BAD TERMINATION OF ONE OF YOUR APPLICATION PROCESSES

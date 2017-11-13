@@ -1,6 +1,6 @@
 #!/bin/bash
-#PBS -l procs=4,walltime=1:00
-#PBS -N cannon_job
+#PBS -l procs=8,walltime=1:00
+#PBS -N dns_job
 #PBS -q edu_shared
 
 #PBS -e ./output/mpitest.err
@@ -9,4 +9,4 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/cannon 2 2
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/dns 8 2
