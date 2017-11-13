@@ -29,6 +29,14 @@ Matrix internal_mul(Matrix A, Matrix B, int rows, int cols);
 
 void print_matrix(Matrix A, int rows, int cols);
 void LU_decomposition( int p, int sr_p, Matrix A, int* my_cord, int n, int* rows_division, MPI_Comm comm);
+void LU_decomposition_serial(Matrix A, int n);
+float compute_det_serial(Matrix A, int n);
+int cube_root(int p);
+
+
+/*----------------------------------------------------------------------------*/
+/*--------------------PRIVATE LU FUNCTION PROTOTYPES--------------------------*/
+/*----------------------------------------------------------------------------*/
 
 void compute_intern(Matrix A,int n);
 void compute_only_left(Matrix A, Matrix B, int n);
@@ -38,10 +46,6 @@ void send_on_col(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int
 void receive(MPI_Comm mesh_comm, int col, int row, Matrix mailbox, int n);
 void send_on_row(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int srt_col);
 
-void LU_decomposition_serial(Matrix A, int n);
-float compute_det_serial(Matrix A, int n);
-int cube_root(int p);
-
 /*----------------------------------------------------------------------------*/
 /*------------------------------------MAIN------------------------------------*/
 /*----------------------------------------------------------------------------*/
@@ -49,7 +53,15 @@ int cube_root(int p);
 int main(int argc, char** argv) {
 
   // variable declaration
+  // MPI_topology variable
   MPI_Comm mesh_comm;
+  MPI_Comm ring_i;
+  MPI_Comm ring_j;
+  MPI_Comm ring_k;
+  MPI_Comm mesh_ij;
+  MPI_Group group_ring_j, group_ring_i, group_main;
+  MPI_Group group_mesh_ij, group_ring_k;
+  
   int reorder = 1;
   int period[3];
   int root_rank,my_rank;
@@ -79,34 +91,23 @@ int main(int argc, char** argv) {
   int dest_rank, src_rank, src_rank_ring;
   int src_cord[3];
 
-
-
-  MPI_Comm ring_i;
-  MPI_Comm ring_j;
-  MPI_Comm ring_k;
-  MPI_Comm mesh_ij;
-
-  MPI_Group group_ring_j, group_ring_i, group_main;
-  MPI_Group group_mesh_ij, group_ring_k;
-
-
-
-  // save in n the dimension of theMatrix
+  // save in n the linear dimension of the Matrix
   n = atoi(argv[1]);
+  // save the exponent of the matrix power
   k = atoi(argv[2]);
 
   // Initialize MPI environment
   MPI_Init(&argc, &argv);
-  // save the number of processors
+  // Save the number of processors
   MPI_Comm_size(MPI_COMM_WORLD, &p);
   // Compute the cube root.
   cr_p = cube_root(p);
-  // save the number of rows and cols of each subblock of the initial matrix
+  // Save the number of rows and cols of each subblock of the initial matrix
   rows_per_proc = n / cr_p;
-
+  // Each block is a square block
   num_elements_per_block = rows_per_proc * rows_per_proc;
 
-  // create a virtual topology for the 3-D mesh of p^(1/3)-elements
+  // Create a virtual topology for the 3-D mesh of p^(1/3)-elements
   dims[0] = cr_p;
   dims[1] = cr_p;
   dims[2] = cr_p;
@@ -114,35 +115,39 @@ int main(int argc, char** argv) {
   period[1] = 1;
   period[2] = 1;
   MPI_Cart_create(MPI_COMM_WORLD, 3, dims, period, reorder, &mesh_comm);
-  // save the rank of each processor in rank
+  // Save the rank of each processor in rank
   MPI_Comm_rank(mesh_comm, &my_rank);
-  // save the coordinates of each processor given the rank
+  // Save the coordinates in the 3D topology 
+  // of each processor given the rank
   MPI_Cart_coords(mesh_comm, my_rank, 3, my_cord);
 
+  // Create the sub-topology starting from the 3D one.
   dims[DIM_i] = 0;
-  dims[DIM_j] = 1;
+  dims[DIM_j] = 1;  // Only dimension j
   dims[DIM_k] = 0;
   MPI_Cart_sub(mesh_comm, dims, &ring_j);
   dims[DIM_i] = 0;
   dims[DIM_j] = 0;
-  dims[DIM_k] = 1;
+  dims[DIM_k] = 1;  // Only dimension k
   MPI_Cart_sub(mesh_comm, dims, &ring_k);
-  dims[DIM_i] = 1;
+  dims[DIM_i] = 1;  // Only dimension i
   dims[DIM_j] = 0;
   dims[DIM_k] = 0;
   MPI_Cart_sub(mesh_comm, dims, &ring_i);
-  dims[DIM_i] = 1;
+  dims[DIM_i] = 1;  // Both dimension i and j
   dims[DIM_j] = 1;
   dims[DIM_k] = 0;
   MPI_Cart_sub(mesh_comm, dims, &mesh_ij);
 
-  // Cordinates of the root process
+  // Cordinates of the root process in the 3D topology
   root_cord[0] = 0;
   root_cord[1] = 0;
   root_cord[2] = 0;
-  // get the rank of root processor in the topology
+  // Get the rank of root processor in the 3D topology
   MPI_Cart_rank(mesh_comm, root_cord, &root_rank);
 
+  // Each processor will have a block of the matrix A 
+  // the matrix B.
   my_flat_block_A = (Flat_matrix) malloc(num_elements_per_block*sizeof(float));
   my_flat_block_B = (Flat_matrix) malloc(num_elements_per_block*sizeof(float));
 
@@ -151,8 +156,6 @@ int main(int argc, char** argv) {
     // allocate the data
     A = allocate_zero_matrix(n,n);
     B = allocate_zero_matrix(n,n);
-    C = allocate_zero_matrix(n,n);
-
 
     C_flat = (Flat_matrix) malloc(n*n*sizeof(float));
 
@@ -160,18 +163,19 @@ int main(int argc, char** argv) {
     srand(time(NULL));
     for (i = 0; i < n; i++) {
       for ( j = 0; j < n; j++ ) {
-        A[i][j] = i*2 + j;
-        B[i][j] = j*2 + i;
+        A[i][j] = 2*(rand() % 2) - 1;
+        B[i][j] = 2*(rand() % 2) - 1;
       }
     }
+#if DEBUG == 1
     print_matrix(A, n, n);
     print_matrix(B, n,n);
+#endif
     A_flat = flat_block_matrix(cr_p, n/cr_p, A);
-    //for ( i = 0; i < n*n; i++ )
-    //  printf("A_flat[%d]: %f\n", i, A_flat[i]);
     B_flat = flat_block_matrix(cr_p, n/cr_p, B);
   }
 
+  // Create the groups
   MPI_Comm_group(ring_j, &group_ring_j);
   MPI_Comm_group(ring_i, &group_ring_i);
   MPI_Comm_group(ring_k, &group_ring_k);
@@ -189,6 +193,11 @@ int main(int argc, char** argv) {
     MPI_Scatter(B_flat, num_elements_per_block, MPI_FLOAT,
               my_flat_block_B, num_elements_per_block, MPI_FLOAT,
               root_rank_mesh_ij, mesh_ij);
+  }
+
+  if ( my_rank == root_rank ) {
+    free(A_flat);
+    free(B_flat);
   }
 
   if ( my_cord[DIM_k] == 0) {
