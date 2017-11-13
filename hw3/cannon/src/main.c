@@ -53,7 +53,13 @@ int main(int argc, char** argv) {
   Matrix A, B, D;
   Flat_matrix A_flat, B_flat;
   int sr_p;
+  int uprank, downrank, leftrank, rightrank;
+  int rows;
+  int cols;
+  MPI_Status status;
+  Flat_matrix flatB, flatD;
 
+  int shiftsource, shiftdest;
   int p_cord[2];
 
   // save in n the dimension of the Matrix
@@ -71,9 +77,8 @@ int main(int argc, char** argv) {
 //#endif
   // save the number of rows and cols for which each processor is in charge
   rows_per_proc = n / sr_p;
-  int rows = n/sr_p;
-  int cols = n/sr_p;
-
+  rows = n/sr_p;
+  cols = n/sr_p;
   // create a virtual topology for the 2-D mesh of k-elements
   dims[0] = sr_p;
   dims[1] = sr_p;
@@ -154,17 +159,12 @@ int main(int argc, char** argv) {
   //  }
   //#endif
 
-    int uprank, downrank, leftrank, rightrank;
 
-<<<<<<< HEAD
-  int rows = n/sr_p;
-  int cols = n/sr_p;
-  int i, j, k;
-  Flat_matrix flatB, flatD;
 
-  int shiftsource, shiftdest;
+
+
   // Shift each rows by i on left
-  MPI_Cart_shift(mesh_comm, 0, -my_cord[0], &shiftsource, &shiftdest);
+  MPI_Cart_shift(mesh_comm, 1, -my_cord[0], &shiftsource, &shiftdest);
   //printf("prima flat D\n");
   flatD = flattenize_matrix(D, rows, cols);
   //printf("quasi D\n");
@@ -173,7 +173,7 @@ int main(int argc, char** argv) {
   D = deflattenize_matrix(flatD, rows, cols);
   //printf("dopo deflat D\n");
   // Shift each column up by j
-  MPI_Cart_shift(mesh_comm, 1, -my_cord[1], &shiftsource, &shiftdest);
+  MPI_Cart_shift(mesh_comm, 0, -my_cord[1], &shiftsource, &shiftdest);
   //printf("prima flat B\n");
   flatB = flattenize_matrix(B, rows, cols);
   //printf("quasi B\n");
@@ -182,20 +182,19 @@ int main(int argc, char** argv) {
   B = deflattenize_matrix(flatB, rows, cols);
   //printf("dopo deflat B\n");
 
-  printf("QUI\n");
-
+  printf("QUI zio\n");
 //  for (k = 0; k < sr_p; k++) {
 //    for (i = 0; i < sr_p; i++) {
-      for (j = 0; j < sr_p; j++) {
+      for (j = 0; j < 1; j++) {
         matrix_multiply(D, B, D, rows, cols); // D += D*B
         //left circ by 1
-        MPI_Cart_shift(mesh_comm, 0, -1, &rightrank, &leftrank);
+        MPI_Cart_shift(mesh_comm, 1, -1, &rightrank, &leftrank);
         flatD = flattenize_matrix(D, rows, cols);
-        printf("ciao\n");
+        printf("ciaone\n");
         MPI_Sendrecv_replace(flatD, rows*cols, MPI_FLOAT, leftrank, 1, rightrank, 1, mesh_comm, &status);
         D = deflattenize_matrix(flatD, rows, cols);
         //up circ by 1
-        MPI_Cart_shift(mesh_comm, 1, -1, &downrank, &uprank);
+        MPI_Cart_shift(mesh_comm, 0, -1, &downrank, &uprank);
         flatB = flattenize_matrix(B, rows, cols);
         MPI_Sendrecv_replace(flatB, rows*cols, MPI_FLOAT, uprank, 1, downrank, 1, mesh_comm, &status);
         B = deflattenize_matrix(flatB, rows, cols);
@@ -212,15 +211,15 @@ int main(int argc, char** argv) {
   //  printf("Cannon start\n");
   //  cannon(D, B, mesh_comm, n/sr_p, n/sr_p, my_cord, sr_p);
   //  printf("dopo cannon\n");
-  //#if DEBUG
-  //  for (i = 0; i < n/sr_p; i++) {
-  //    printf("(%d,%d): ", my_cord[0], my_cord[1]);
-  //    for (j = 0; j < n/sr_p; j++) {
-  //      printf("%.2f\t", D[i][j]);
-  //    }
-  //    printf("\n");
-  //  }
-  //#endif
+  #if DEBUG
+    for (i = 0; i < n/sr_p; i++) {
+      printf("(%d,%d): ", my_cord[0], my_cord[1]);
+      for (j = 0; j < n/sr_p; j++) {
+        printf("%.2f\t", D[i][j]);
+      }
+      printf("\n");
+    }
+  #endif
 
 
 final_time = 0;
@@ -259,7 +258,7 @@ void matrix_multiply(Matrix a, Matrix b, Matrix dest, int r, int c) {
 
   for (i = 0; i < r; i++) {
     for (j = 0; j < c; j++) {
-      for (k = 0; k < r; k++) {
+      for (k = 0; k < c; k++) {
         dest[i][j] += a[i][k] + b[k][j];
       }
     }
