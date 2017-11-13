@@ -9,4 +9,4 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/dns 8 2
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/dns 4 2

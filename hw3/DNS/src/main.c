@@ -165,7 +165,10 @@ int main(int argc, char** argv) {
       }
     }
     print_matrix(A, n, n);
+    print_matrix(B, n,n);
     A_flat = flat_block_matrix(cr_p, n/cr_p, A);
+    //for ( i = 0; i < n*n; i++ )
+    //  printf("A_flat[%d]: %f\n", i, A_flat[i]);
     B_flat = flat_block_matrix(cr_p, n/cr_p, B);
   }
 
@@ -186,9 +189,6 @@ int main(int argc, char** argv) {
     MPI_Scatter(B_flat, num_elements_per_block, MPI_FLOAT,
               my_flat_block_B, num_elements_per_block, MPI_FLOAT,
               root_rank_mesh_ij, mesh_ij);
-    //for (i = 0; i < num_elements_per_block; i++) {
-    //  printf("%d,%d,%d: %f\n", my_cord[0], my_cord[1], my_cord[2], my_flat_block_A[i]);
-    //}
   }
 
   if ( my_cord[DIM_k] == 0) {
@@ -214,6 +214,7 @@ int main(int argc, char** argv) {
     if ( my_cord[DIM_j] == my_cord[DIM_k] ) {
       MPI_Recv(my_flat_block_A, num_elements_per_block, MPI_FLOAT, src_rank,
           0, mesh_comm, MPI_STATUS_IGNORE);
+
     }
     if ( my_cord[DIM_i] == my_cord[DIM_k]) {
       MPI_Recv(my_flat_block_B, num_elements_per_block, MPI_FLOAT, src_rank,
@@ -233,6 +234,8 @@ int main(int argc, char** argv) {
                ring_j);
 
 
+
+
   src_cord[DIM_i] = my_cord[DIM_k];
   src_cord[DIM_j] = my_cord[DIM_j];
   src_cord[DIM_k] = my_cord[DIM_k];
@@ -243,6 +246,7 @@ int main(int argc, char** argv) {
   MPI_Bcast(my_flat_block_B, num_elements_per_block, MPI_FLOAT, src_rank_ring,
                ring_i);
 
+
   //for (i = 0; i < num_elements_per_block; i++) {
   //  printf("A -- %d,%d,%d: %f\n", my_cord[0], my_cord[1], my_cord[2], my_flat_block_A[i]);
   //  printf("B -- %d,%d,%d: %f\n", my_cord[0], my_cord[1], my_cord[2], my_flat_block_B[i]);
@@ -251,6 +255,7 @@ int main(int argc, char** argv) {
 
   A_block = deflattenize_matrix(my_flat_block_A, rows_per_proc,rows_per_proc);
   B_block = deflattenize_matrix(my_flat_block_B, rows_per_proc,rows_per_proc);
+
 
   partial_C = internal_mul(A_block, B_block, rows_per_proc, rows_per_proc);
 
@@ -285,8 +290,20 @@ int main(int argc, char** argv) {
         mesh_ij);
 
     if (my_rank == root_rank) {
-      
-      C = deflattenize_matrix(C_flat, n, n);
+     
+      k = 0;
+      C = allocate_zero_matrix(n,n);
+      for ( i = 0; i < cr_p; i++ ) {
+        for ( j = 0; j < cr_p; j++ ) {
+          for (l = 0; l < rows_per_proc; l++) {
+            for (m = 0; m < rows_per_proc; m++) {
+              C[i*rows_per_proc + l][j*rows_per_proc + m] = C_flat[k];
+              k++;
+            }
+          }
+        }
+       }
+          
 
       Matrix D = internal_mul(A, B, n, n);
 
@@ -294,12 +311,10 @@ int main(int argc, char** argv) {
 
       for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
-          if (C[i][j] != D[i][j] )
-            printf("%d %d, %f %f\n", i,j, C[i][j], D[i][j]);
+          if ( C[i][j] != D[i][j] )
+            printf("%f %f\n", C[i][j], D[i][j]);
         }
       }
-      if(count == n*n)
-        printf("Sono uguali\n");
     }
   }
 
@@ -321,7 +336,7 @@ Matrix internal_mul(Matrix A, Matrix B, int rows, int cols) {
   Matrix C = allocate_zero_matrix(rows,cols);
 
   for ( i = 0; i < rows; i++ ) {
-    for ( j = 0; j < rows; j++ ) {
+    for ( j = 0; j < cols; j++ ) {
       for ( k = 0; k < cols; k++ ) {
           C[i][j] += A[i][k]*B[k][j];
         }
