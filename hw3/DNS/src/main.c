@@ -10,16 +10,22 @@
 #define DIM_j 1
 #define DIM_k 2
 
-
+/*----------------------------------------------------------------------------*/
 /*-------------------------------TYPES DEFINITION-----------------------------*/
+/*----------------------------------------------------------------------------*/
+
 typedef float** Matrix;
 typedef float*  Flat_matrix;
 
+/*----------------------------------------------------------------------------*/
 /*-------------------------------FUNCTION PROTOTYPES--------------------------*/
+/*----------------------------------------------------------------------------*/
+
 Matrix allocate_zero_matrix(int rows, int cols);
 Flat_matrix flattenize_matrix(Matrix A, int rows, int cols);
 Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols );
 Flat_matrix flat_block_matrix(int num_1D_blocks, int num_elements_1D_block, Matrix A);
+Matrix internal_mul(Matrix A, Matrix B, int rows, int cols);
 
 void print_matrix(Matrix A, int rows, int cols);
 void LU_decomposition( int p, int sr_p, Matrix A, int* my_cord, int n, int* rows_division, MPI_Comm comm);
@@ -34,9 +40,12 @@ void send_on_row(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int
 
 void LU_decomposition_serial(Matrix A, int n);
 float compute_det_serial(Matrix A, int n);
-int square_root(int p);
+int cube_root(int p);
 
+/*----------------------------------------------------------------------------*/
 /*------------------------------------MAIN------------------------------------*/
+/*----------------------------------------------------------------------------*/
+
 int main(int argc, char** argv) {
 
   // variable declaration
@@ -49,6 +58,7 @@ int main(int argc, char** argv) {
   int i,j,iteration,m,l,k;
   float result,partial_det,mail_box;
   int rows_per_proc,reminder;
+  int num_elements_per_block;
   double time_vector[N_ITERATIONS],deviation;
   double average_time, final_time, initial_time;
   // pointer declaration
@@ -56,32 +66,45 @@ int main(int argc, char** argv) {
   int* sendcounts;
   int* displs;
   int dims[3];
-  Matrix A,B;
-  Flat_matrix A_flat, B_flat;
+  Matrix A, B, C;
+  Flat_matrix A_flat, B_flat, C_flat;
   MPI_Status status;
-  int sr_p;
+  int cr_p;
+  int root_rank_mesh_ij;
+  Flat_matrix my_flat_block_A, my_flat_block_B, my_flat_block_C, mailbox;
+  Matrix A_block, B_block, partial_C;
 
   int p_cord[2];
+  int dest_cord[3];
+  int dest_rank, src_rank, src_rank_ring;
+  int src_cord[3];
 
 
-  MPI_comm ring_i;
-  MPI_comm ring_j;
-  MPI_comm ring_k;
-  MPI_comm mesh_ij;
+
+  MPI_Comm ring_i;
+  MPI_Comm ring_j;
+  MPI_Comm ring_k;
+  MPI_Comm mesh_ij;
+
+  MPI_Group group_ring_j, group_ring_i, group_main;
+  MPI_Group group_mesh_ij, group_ring_k;
 
 
 
   // save in n the dimension of theMatrix
   n = atoi(argv[1]);
+  k = atoi(argv[2]);
 
   // Initialize MPI environment
   MPI_Init(&argc, &argv);
   // save the number of processors
   MPI_Comm_size(MPI_COMM_WORLD, &p);
-  // Compute the square root.
+  // Compute the cube root.
   cr_p = cube_root(p);
   // save the number of rows and cols of each subblock of the initial matrix
   rows_per_proc = n / cr_p;
+
+  num_elements_per_block = rows_per_proc * rows_per_proc;
 
   // create a virtual topology for the 3-D mesh of p^(1/3)-elements
   dims[0] = cr_p;
@@ -99,19 +122,19 @@ int main(int argc, char** argv) {
   dims[DIM_i] = 0;
   dims[DIM_j] = 1;
   dims[DIM_k] = 0;
-  MPI_Cart_sub(mesch_comm, dims, &ring_j);
+  MPI_Cart_sub(mesh_comm, dims, &ring_j);
   dims[DIM_i] = 0;
   dims[DIM_j] = 0;
   dims[DIM_k] = 1;
-  MPI_Cart_sub(mesch_comm, dims, &ring_k);
+  MPI_Cart_sub(mesh_comm, dims, &ring_k);
   dims[DIM_i] = 1;
   dims[DIM_j] = 0;
   dims[DIM_k] = 0;
-  MPI_Cart_sub(mesch_comm, dims, &ring_i);
+  MPI_Cart_sub(mesh_comm, dims, &ring_i);
   dims[DIM_i] = 1;
   dims[DIM_j] = 1;
   dims[DIM_k] = 0;
-  MPI_Cart_sub(mesch_comm, dims, &mesh_ij);
+  MPI_Cart_sub(mesh_comm, dims, &mesh_ij);
 
   // Cordinates of the root process
   root_cord[0] = 0;
@@ -120,41 +143,52 @@ int main(int argc, char** argv) {
   // get the rank of root processor in the topology
   MPI_Cart_rank(mesh_comm, root_cord, &root_rank);
 
-  if ( my_cord[DIM_k] == 0 ) {
-    my_flat_block_A = (Flat_matrix) malloc(num_elements_per_block*sizeof(float));
-    my_flat_block_B = (Flat_matrix) malloc(num_elements_per_block*sizeof(float));
-  }
+  my_flat_block_A = (Flat_matrix) malloc(num_elements_per_block*sizeof(float));
+  my_flat_block_B = (Flat_matrix) malloc(num_elements_per_block*sizeof(float));
 
   // if it is the root processor
   if ( my_rank == root_rank) {
     // allocate the data
     A = allocate_zero_matrix(n,n);
     B = allocate_zero_matrix(n,n);
+    C = allocate_zero_matrix(n,n);
+
+
+    C_flat = (Flat_matrix) malloc(n*n*sizeof(float));
+
     // declare the seed
     srand(time(NULL));
     for (i = 0; i < n; i++) {
       for ( j = 0; j < n; j++ ) {
-        A[i][j] = 2*(rand() % 2) - 1;i
-        B[i][j] = 2*(rand() % 2) - 1;i
+        A[i][j] = i*2 + j;
+        B[i][j] = j*2 + i;
       }
     }
+    print_matrix(A, n, n);
     A_flat = flat_block_matrix(cr_p, n/cr_p, A);
     B_flat = flat_block_matrix(cr_p, n/cr_p, B);
-    MPI_Scatter(A_flat, num_elements_per_block , MPI_FLOAT,
-               my_flat_block_A, num_elements_per_block, MPI_FLOAT, root_rank,
-               mesh_ij);
+  }
+
+  MPI_Comm_group(ring_j, &group_ring_j);
+  MPI_Comm_group(ring_i, &group_ring_i);
+  MPI_Comm_group(ring_k, &group_ring_k);
+  MPI_Comm_group(mesh_comm, &group_main);
+  MPI_Comm_group(mesh_ij, &group_mesh_ij);
+
+  if ( my_cord[DIM_k] == 0 ) {
+    mailbox = (Flat_matrix) malloc(num_elements_per_block*sizeof(float));
+
+    MPI_Group_translate_ranks(group_main, 1, &root_rank,
+                            group_mesh_ij, &root_rank_mesh_ij);
+    MPI_Scatter(A_flat, num_elements_per_block, MPI_FLOAT,
+              my_flat_block_A, num_elements_per_block, MPI_FLOAT,
+              root_rank_mesh_ij, mesh_ij);
     MPI_Scatter(B_flat, num_elements_per_block, MPI_FLOAT,
-               my_flat_block_B, num_elements_per_block, MPI_FLOAT, root_rank,
-               mesh_ij);
-  } else {
-    if ( my_cord[DIM_k] == 0 ) {
-      MPI_Scatter(A_flat, num_elements_per_block, MPI_FLOAT,
-                my_flat_block_A, num_elements_per_block, MPI_FLOAT, root_rank,
-                mesh_ij);
-      MPI_Scatter(B_flat, num_elements_per_block, MPI_FLOAT,
-                my_flat_block_B, num_elements_per_block, MPI_FLOAT, root_rank,
-                mesh_ij);
-    }
+              my_flat_block_B, num_elements_per_block, MPI_FLOAT,
+              root_rank_mesh_ij, mesh_ij);
+    //for (i = 0; i < num_elements_per_block; i++) {
+    //  printf("%d,%d,%d: %f\n", my_cord[0], my_cord[1], my_cord[2], my_flat_block_A[i]);
+    //}
   }
 
   if ( my_cord[DIM_k] == 0) {
@@ -162,28 +196,31 @@ int main(int argc, char** argv) {
     dest_cord[DIM_j] = my_cord[DIM_j];
     dest_cord[DIM_k] = my_cord[DIM_j];
     MPI_Cart_rank(mesh_comm, dest_cord, &dest_rank);
-    MPI_Send(my_flat_block_A,num_elements_per_block,MPI_FLOAT,dest_rank,0,mesh_comm);
+    if ( my_cord[DIM_j] > 0) {
+      MPI_Send(my_flat_block_A,num_elements_per_block,MPI_FLOAT,dest_rank,0,mesh_comm);
+    }
     dest_cord[DIM_i] = my_cord[DIM_i];
     dest_cord[DIM_j] = my_cord[DIM_j];
     dest_cord[DIM_k] = my_cord[DIM_i];
     MPI_Cart_rank(mesh_comm, dest_cord, &dest_rank);
-    MPI_Send(my_flat_block_B,num_elements_per_block,MPI_FLOAT,dest_rank,0,mesh_comm);
+    if ( my_cord[DIM_i] > 0) {
+      MPI_Send(my_flat_block_B,num_elements_per_block,MPI_FLOAT,dest_rank,0,mesh_comm);
+    }
   } else {
     src_cord[DIM_i] = my_cord[DIM_i];
     src_cord[DIM_j] = my_cord[DIM_j];
     src_cord[DIM_k] = 0;
     MPI_Cart_rank(mesh_comm, src_cord, &src_rank);
     if ( my_cord[DIM_j] == my_cord[DIM_k] ) {
-      MPI_Recv(my_flat_block_A, num_elements_per_block,MPI_FLOAT,src_rank,0,mesh_comm);
+      MPI_Recv(my_flat_block_A, num_elements_per_block, MPI_FLOAT, src_rank,
+          0, mesh_comm, MPI_STATUS_IGNORE);
     }
     if ( my_cord[DIM_i] == my_cord[DIM_k]) {
-      MPI_Recv(&my_flat_block_B,num_elements_per_block,MPI_FLOAT,src_rank,0,mesh_comm);
+      MPI_Recv(my_flat_block_B, num_elements_per_block, MPI_FLOAT, src_rank,
+          0, mesh_comm, MPI_STATUS_IGNORE);
     }
   }
 
-  MPI_Comm_group(ring_j,&group_ring_j);
-  MPI_Comm_group(ring_i,&group_ring_i);
-  MPI_Comm_group(mesh_comm,&group_main);
 
   src_cord[DIM_j] = my_cord[DIM_k];
   src_cord[DIM_i] = my_cord[DIM_i];
@@ -195,6 +232,7 @@ int main(int argc, char** argv) {
   MPI_Bcast(my_flat_block_A, num_elements_per_block, MPI_FLOAT, src_rank_ring,
                ring_j);
 
+
   src_cord[DIM_i] = my_cord[DIM_k];
   src_cord[DIM_j] = my_cord[DIM_j];
   src_cord[DIM_k] = my_cord[DIM_k];
@@ -205,9 +243,18 @@ int main(int argc, char** argv) {
   MPI_Bcast(my_flat_block_B, num_elements_per_block, MPI_FLOAT, src_rank_ring,
                ring_i);
 
+  //for (i = 0; i < num_elements_per_block; i++) {
+  //  printf("A -- %d,%d,%d: %f\n", my_cord[0], my_cord[1], my_cord[2], my_flat_block_A[i]);
+  //  printf("B -- %d,%d,%d: %f\n", my_cord[0], my_cord[1], my_cord[2], my_flat_block_B[i]);
+  //}
 
-  partial_C = internal_mul(A_block,B_block,n/cr_p,n/cr_p);
-  
+
+  A_block = deflattenize_matrix(my_flat_block_A, rows_per_proc,rows_per_proc);
+  B_block = deflattenize_matrix(my_flat_block_B, rows_per_proc,rows_per_proc);
+
+  partial_C = internal_mul(A_block, B_block, rows_per_proc, rows_per_proc);
+
+  my_flat_block_C = flattenize_matrix(partial_C,rows_per_proc,rows_per_proc);
 
   src_cord[DIM_i] = my_cord[DIM_i];
   src_cord[DIM_j] = my_cord[DIM_j];
@@ -216,20 +263,46 @@ int main(int argc, char** argv) {
   MPI_Group_translate_ranks(group_main, 1, &src_rank,
                             group_ring_k, &src_rank_ring);
 
-
   MPI_Reduce(
       my_flat_block_C,
-      mail_box,
+      mailbox,
       num_elements_per_block,
       MPI_FLOAT,
       MPI_SUM,
-      src_rank,
-      group_ring_k);
+      src_rank_ring,
+      ring_k);
 
 
-  if ( my_cord[k] == 0 ) {
-    
+  if ( my_cord[DIM_k] == 0 ) {
+    int a,b;
+    MPI_Gather(mailbox,
+        num_elements_per_block,
+        MPI_FLOAT,
+        C_flat,
+        num_elements_per_block,
+        MPI_FLOAT,
+        root_rank_mesh_ij,
+        mesh_ij);
+
+    if (my_rank == root_rank) {
+      
+      C = deflattenize_matrix(C_flat, n, n);
+
+      Matrix D = internal_mul(A, B, n, n);
+
+      int count = 0;
+
+      for (i = 0; i < n; i++) {
+        for (j = 0; j < n; j++) {
+          if (C[i][j] != D[i][j] )
+            printf("%d %d, %f %f\n", i,j, C[i][j], D[i][j]);
+        }
+      }
+      if(count == n*n)
+        printf("Sono uguali\n");
+    }
   }
+
 
 
   // close the MPI environment
@@ -238,7 +311,9 @@ int main(int argc, char** argv) {
   return 0;
 }
 
+/*----------------------------------------------------------------------------*/
 /*-------------------------------FUNCTIONS------------------------------------*/
+/*----------------------------------------------------------------------------*/
 
 Matrix internal_mul(Matrix A, Matrix B, int rows, int cols) {
 
@@ -253,15 +328,12 @@ Matrix internal_mul(Matrix A, Matrix B, int rows, int cols) {
     }
   }
 
+
   return C;
 
 }
 
-
-
-
-
-
+/*----------------------------------------------------------------------------*/
 
 void print_matrix(Matrix A, int rows, int cols) {
 
@@ -277,6 +349,7 @@ void print_matrix(Matrix A, int rows, int cols) {
   return;
 }
 
+/*----------------------------------------------------------------------------*/
 
 Matrix allocate_zero_matrix(int rows, int cols) {
 
@@ -294,6 +367,7 @@ Matrix allocate_zero_matrix(int rows, int cols) {
   return mat;
 }
 
+/*----------------------------------------------------------------------------*/
 
 Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols ) {
 
@@ -311,6 +385,7 @@ Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols ) {
   return mat;
 }
 
+/*----------------------------------------------------------------------------*/
 
 Flat_matrix flattenize_matrix(Matrix A, int rows, int cols) {
 
@@ -328,6 +403,7 @@ Flat_matrix flattenize_matrix(Matrix A, int rows, int cols) {
   return fmat;
 }
 
+/*----------------------------------------------------------------------------*/
 
 void LU_decomposition(
     int p,                      // Number of processors.
@@ -383,6 +459,7 @@ void LU_decomposition(
   return;
 }
 
+/*----------------------------------------------------------------------------*/
 
 void send_on_row(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int srt_col) {
 
@@ -403,6 +480,7 @@ void send_on_row(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int
   return;
 }
 
+/*----------------------------------------------------------------------------*/
 
 void receive(MPI_Comm mesh_comm, int col, int row, Matrix mailbox, int n) {
 
@@ -430,6 +508,7 @@ void receive(MPI_Comm mesh_comm, int col, int row, Matrix mailbox, int n) {
   return;
 }
 
+/*----------------------------------------------------------------------------*/
 
 void send_on_col(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int srt_col) {
 
@@ -450,6 +529,7 @@ void send_on_col(MPI_Comm mesh_comm, Matrix A, int n, int sr_p, int srt_row, int
   return;
 }
 
+/*----------------------------------------------------------------------------*/
 
 void compute_only_up(Matrix A, Matrix B, int n) {
 
@@ -469,6 +549,7 @@ void compute_only_up(Matrix A, Matrix B, int n) {
   return;
 }
 
+/*----------------------------------------------------------------------------*/
 
 void compute_up_left(Matrix A, Matrix B, Matrix C, int n) {
 
@@ -487,6 +568,7 @@ void compute_up_left(Matrix A, Matrix B, Matrix C, int n) {
   return;
 }
 
+/*----------------------------------------------------------------------------*/
 
 void compute_only_left(Matrix A, Matrix B, int n) {
 
@@ -506,6 +588,7 @@ void compute_only_left(Matrix A, Matrix B, int n) {
   return;
 }
 
+/*----------------------------------------------------------------------------*/
 
 void compute_intern(Matrix A,int n) {
 
@@ -534,6 +617,7 @@ void compute_intern(Matrix A,int n) {
   return;
 }
 
+/*----------------------------------------------------------------------------*/
 
 float compute_det_serial(Matrix A, int n) {
 
@@ -558,6 +642,7 @@ float compute_det_serial(Matrix A, int n) {
   return det;
 }
 
+/*----------------------------------------------------------------------------*/
 
 void LU_decomposition_serial(Matrix A, int n) {
 
@@ -584,15 +669,16 @@ void LU_decomposition_serial(Matrix A, int n) {
   return;
 }
 
+/*----------------------------------------------------------------------------*/
 
-int square_root(int p) {
+int cube_root(int p) {
 
   int flag,result;
   result = 1;
   flag = 1;
 
   while ( flag ) {
-    if ( result*result == p ) {
+    if ( result*result*result == p ) {
       flag = 0;
     } else {
       result++;
@@ -602,7 +688,7 @@ int square_root(int p) {
   return result;
 }
 
-
+/*----------------------------------------------------------------------------*/
 
 Flat_matrix flat_block_matrix(int num_1D_blocks, int num_elements_1D_block, Matrix A) {
 
@@ -630,6 +716,4 @@ Flat_matrix flat_block_matrix(int num_1D_blocks, int num_elements_1D_block, Matr
 
 }
 
-
-
-
+/*----------------------------------------------------------------------------*/
