@@ -27,6 +27,7 @@ void print_matrix(Matrix A, int rows, int cols);
 float compute_det_serial(Matrix A, int n);
 int square_root(int p);
 void cpy_mat(Matrix dest, Matrix src, int rows, int cols);
+Flat_matrix flat_block_matrix(int num_1D_blocks, int num_elements_1D_block, Matrix A);
 
 /*----------------------------------------------------------------------------*/
 /*------------------------------------MAIN------------------------------------*/
@@ -119,7 +120,7 @@ int main(int argc, char** argv) {
     for (i = 0; i < n; i++) {
       for ( j = 0; j < n; j++ ) {
       #if DEBUG
-        A[i][j] = v;
+        A[i][j] = 2*(rand() % 2) - 1;
         v++;
       #else
         num = rand() % 100;
@@ -133,7 +134,7 @@ int main(int argc, char** argv) {
       }
     }
     print_matrix(A, n, n);
-    A_flat = flattenize_matrix(A, n, n);
+    A_flat = flat_block_matrix(sr_p, n/sr_p, A);
   }
 
   B_flat = (Flat_matrix) malloc(n*n/p*sizeof(float));
@@ -145,9 +146,9 @@ int main(int argc, char** argv) {
     initial_time = MPI_Wtime();
     // scatter the data from source to all the processors
     MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_rank], MPI_FLOAT, root_rank, mesh_comm);
-    for (i = 0; i < rows*cols; i++) {
-      printf("B --(%d,%d) - %f\n", my_cord[0], my_cord[1], B_flat[i]);
-    }
+    //for (i = 0; i < rows*cols; i++) {
+    //  printf("B_block --(%d,%d) - %f\n", my_cord[0], my_cord[1], B_flat[i]);
+    //}
     ///////////////////////////////////////////////////////////////////////////
     B = deflattenize_matrix(B_flat, n/sr_p, n/sr_p);
     D = allocate_zero_matrix(n/sr_p, n/sr_p);
@@ -172,7 +173,7 @@ int main(int argc, char** argv) {
   B = deflattenize_matrix(flatB, rows, cols);
 
   //printf("QUI zio\n");
-  for (j = 0; j <n/sr_p; j++) {
+  for (j = 0; j < sr_p; j++) {
     matrix_multiply(D, B, res, rows, cols); // D += D*B
     //left circ by 1
     MPI_Cart_shift(mesh_comm, 1, -1, &rightrank, &leftrank);
@@ -217,12 +218,12 @@ int main(int argc, char** argv) {
         }
       }
 
-      for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
-          printf("res = %.2f\t", C[i][j]);
-        }
-        printf("\n");
-      }
+      //for (i = 0; i < n; i++) {
+        //for (j = 0; j < n; j++) {
+          //printf("res = %.2f\t", C[i][j]);
+        //}
+        //printf("\n");
+      //}
 
       Matrix test;
       test = allocate_zero_matrix(n,n);
@@ -231,9 +232,12 @@ int main(int argc, char** argv) {
         printf("\n");
       for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
-          printf("test = %.2f\t", test[i][j]);
+          //printf("test = %.2f\t", test[i][j]);
+          if (test[i][j] != C[i][j]) {
+            printf("different = [%f][%f]\n",C[i][j], test[i][j]);
+          }
         }
-        printf("\n");
+        //printf("\n");
       }
 
     }
@@ -402,3 +406,28 @@ int square_root(int p) {
 }
 
 /*----------------------------------------------------------------------------*/
+Flat_matrix flat_block_matrix(int num_1D_blocks, int num_elements_1D_block, Matrix A) {
+
+  int i,j,k,l,m;
+
+  Flat_matrix A_flat;
+
+
+  A_flat = (Flat_matrix) malloc(
+      num_1D_blocks*num_1D_blocks*num_elements_1D_block*num_elements_1D_block*sizeof(float));
+
+  k = 0;
+  for ( i = 0; i < num_1D_blocks; i++ ) {
+    for ( j = 0; j < num_1D_blocks; j++ ) {
+      for ( m = 0; m < num_elements_1D_block; m++ ) {
+        for ( l = 0; l < num_elements_1D_block; l++ ) {
+          A_flat[k] = A[i*num_elements_1D_block + m][j*num_elements_1D_block + l];
+          k++;
+        }
+      }
+    }
+  }
+
+  return A_flat;
+
+}
