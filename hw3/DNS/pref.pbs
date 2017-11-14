@@ -1,10 +1,10 @@
 #!/bin/bash
 #PBS -l procs=Kprocs,walltime=20:00
-#PBS -N det_job
+#PBS -N dns_job
 #PBS -q edu_shared
 
-#PBS -e output/mpitest_Nelement_Kprocs.err
-#PBS -o output/mpitest_Nelement_Kprocs.out
+#PBS -e output/mpitest_Nelement_Kprocs_Exp.err
+#PBS -o output/mpitest_Nelement_Kprocs_Exp.out
 #PBS -d ./
 
 module load tools/mpich2-1.5-gcc

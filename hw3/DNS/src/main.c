@@ -3,8 +3,8 @@
 #include <time.h>
 #include <mpi.h>
 
-#define N_ITERATIONS 1
-#define DEBUG 1
+#define N_ITERATIONS 20
+#define DEBUG 0
 
 #define DIM_i 0
 #define DIM_j 1
@@ -173,9 +173,6 @@ int main(int argc, char** argv) {
       A_block = deflattenize_matrix(my_flat_block_A,rows_per_proc,rows_per_proc);
     }
 
-    if ( my_rank == root_rank ) {
-      free(A_flat);
-    }
 
     for (i = 0; i < k-1; i++ ) {
       parallel_mm(
