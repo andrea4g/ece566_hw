@@ -216,8 +216,8 @@ void cannon(Matrix src, // source matrix
   int q, i, j, k, l, m;
   int uprank, downrank, leftrank, rightrank;
   int shiftsource, shiftdest;
-  Matrix B, D, copy, res;
-  Flat_matrix A_flat, B_flat, res_flat, C_serial;
+  Matrix B, D, copy, T;
+  Flat_matrix A_flat, B_flat, T_flat, C_serial;
   Flat_matrix flatB, flatD;
   MPI_Status status;
 
@@ -226,7 +226,7 @@ void cannon(Matrix src, // source matrix
     A_flat = flat_block_matrix(sr_p, n/sr_p, src);
   }
   B_flat = (Flat_matrix) malloc(n*n/p*sizeof(float));
-  res = allocate_zero_matrix(row_per_block, cols_per_block);
+  T = allocate_zero_matrix(row_per_block, cols_per_block);
   D = allocate_zero_matrix(row_per_block, cols_per_block);
   // scatter the data from source to all the processors
   MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_rank], MPI_FLOAT, root_rank, comm);
@@ -236,10 +236,10 @@ void cannon(Matrix src, // source matrix
   copy = copy_matrix(B, row_per_block, cols_per_block);
 
   for (q = 0; q < exponent - 1; q++) {
-    // reset res matrix
+    // reset T matrix
     for (i = 0; i < row_per_block; i++) {
       for (j = 0; j < cols_per_block; j++) {
-        res[i][j] = 0;
+        T[i][j] = 0;
       }
     }
     // Shift each row_per_block by i on left
@@ -260,7 +260,7 @@ void cannon(Matrix src, // source matrix
     B = deflattenize_matrix(flatB, row_per_block, cols_per_block);
     //printf("QUI zio\n");
     for (j = 0; j < sr_p; j++) {
-      matrix_multiply(D, B, res, row_per_block, cols_per_block); // D += D*B
+      matrix_multiply(D, B, T, row_per_block, cols_per_block); // D += D*B
       //left circ by 1
       MPI_Cart_shift(comm, 1, -1, &rightrank, &leftrank);
       flatD = flattenize_matrix(D, row_per_block, cols_per_block);
@@ -276,16 +276,16 @@ void cannon(Matrix src, // source matrix
       MPI_Sendrecv_replace(flatB, row_per_block*cols_per_block, MPI_FLOAT, uprank, 1, downrank, 1, comm, &status);
       B = deflattenize_matrix(flatB, row_per_block, cols_per_block);
     }
-    // copy res into D
+    // copy T into D
     for (i = 0; i < row_per_block; i++) {
       for (j = 0; j < cols_per_block; j++) {
         B[i][j] = copy[i][j];
-        D[i][j] = res[i][j];
+        D[i][j] = T[i][j];
       }
     }
   }
-  res_flat = flattenize_matrix(res, row_per_block, cols_per_block);
-  MPI_Gather(res_flat, row_per_block*cols_per_block, MPI_FLOAT, C_serial, row_per_block*cols_per_block, MPI_FLOAT, 0, comm);
+  T_flat = flattenize_matrix(T, row_per_block, cols_per_block);
+  MPI_Gather(T_flat, row_per_block*cols_per_block, MPI_FLOAT, C_serial, row_per_block*cols_per_block, MPI_FLOAT, 0, comm);
   // reoder the matrc in the root rank
   if (my_rank == 0) {
     k = 0;
