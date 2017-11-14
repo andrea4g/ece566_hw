@@ -1,7 +1,6 @@
 #!/bin/bash
 
-Nelement="42";
-mult="2";
+Nelement="84";
 
 for i in {1..5}; do
   Kprocs="4";

@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l procs=49,walltime=10:00
+#PBS -N cannon_job
+#PBS -q edu_shared
+
+#PBS -e output/mpitest_1344_49_3.err
+#PBS -o output/mpitest_1344_49_3.out
+#PBS -d ./
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np 49 ./bin/cannon 1344 3
