@@ -143,32 +143,32 @@ int main(int argc, char** argv) {
     else {
       // cannon function call
       cannon(A, C, mesh_comm, exp, n, p, sr_p, row_per_block, cols_per_block, my_cord, my_rank, root_rank, sendcounts, displs);
-      if (my_rank == root_rank) {
-      #if DEBUG
-        /*
-        for (i = 0; i < n; i++) {
-          for (j = 0; j < n; j++) {
-            printf("res = %.2f\t", C[i][j]);
-          }
-          printf("\n");
-        }
-        */
-        Matrix test, fin;
-        test = allocate_zero_matrix(n,n);
-        fin = allocate_zero_matrix(n,n);
-        matrix_multiply(A, A, test, n, n);
-        matrix_multiply(test, A, fin, n, n);
-        for (i = 0; i < n; i++) {
-          for (j = 0; j < n; j++) {
-            //printf("test = %.2f\t", test[i][j]);
-            if (fin[i][j] != C[i][j]) {
-              printf("different (%d,%d) = [%f][%f]\n", i, j, C[i][j], fin[i][j]);
-            }
-          }
-          //printf("\n");
-        }
-      #endif
-      }
+      //if (my_rank == root_rank) {
+      //#if DEBUG
+      //  /*
+      //  for (i = 0; i < n; i++) {
+      //    for (j = 0; j < n; j++) {
+      //      printf("res = %.2f\t", C[i][j]);
+      //    }
+      //    printf("\n");
+      //  }
+      //  */
+      //  Matrix test, fin;
+      //  test = allocate_zero_matrix(n,n);
+      //  fin = allocate_zero_matrix(n,n);
+      //  matrix_multiply(A, A, test, n, n);
+      //  matrix_multiply(test, A, fin, n, n);
+      //  for (i = 0; i < n; i++) {
+      //    for (j = 0; j < n; j++) {
+      //      //printf("test = %.2f\t", test[i][j]);
+      //      if (fin[i][j] != C[i][j]) {
+      //        printf("different (%d,%d) = [%f][%f]\n", i, j, C[i][j], fin[i][j]);
+      //      }
+      //    }
+      //    //printf("\n");
+      //  }
+      //#endif
+      //}
     }
     final_time = MPI_Wtime();
     time_vector[iteration] = final_time - initial_time;

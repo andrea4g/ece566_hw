@@ -1,5 +1,6 @@
 #!/bin/bash
 
+rm *.err
 
 filename="$(ls *.out)";
 
