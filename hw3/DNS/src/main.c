@@ -142,97 +142,116 @@ int main(int argc, char** argv) {
     C_flat = (Flat_matrix) malloc(n*n*sizeof(float));
   }
 
-  if ( my_cord[DIM_k] == 0 ) {
-    mailbox = allocate_zero_matrix(rows_per_proc, rows_per_proc);
-    mailbox_flat = (Flat_matrix) malloc(
-      num_elements_per_block*sizeof(float));
-    my_flat_block_A = (Flat_matrix) malloc(
-      num_elements_per_block*sizeof(float));
 
-    MPI_Group_translate_ranks(info.group_main, 1, &root_rank,
-                              info.group_mesh_ij, &root_rank_mesh_ij);
-    
+  average_time = 0;
+  for ( iteration = 0; iteration < N_ITERATIONS; iteration++ ) {
+    // save initial time of the task
+    initial_time = MPI_Wtime();
 
-    MPI_Scatter(A_flat, num_elements_per_block, MPI_FLOAT,
-              my_flat_block_A, num_elements_per_block, MPI_FLOAT,
-              root_rank_mesh_ij, info.mesh_ij);  
-  
-    l = 0;
-    for ( i = 0; i < rows_per_proc; i++ ) {
-      for ( j = 0; j < rows_per_proc; j++ ) {
-        mailbox[i][j] = my_flat_block_A[l];
-        l++;
+    if ( my_cord[DIM_k] == 0 ) {
+      mailbox = allocate_zero_matrix(rows_per_proc, rows_per_proc);
+      mailbox_flat = (Flat_matrix) malloc(
+        num_elements_per_block*sizeof(float));
+      my_flat_block_A = (Flat_matrix) malloc(
+        num_elements_per_block*sizeof(float));
+
+      MPI_Group_translate_ranks(info.group_main, 1, &root_rank,
+                                info.group_mesh_ij, &root_rank_mesh_ij);
+
+
+      MPI_Scatter(A_flat, num_elements_per_block, MPI_FLOAT,
+                my_flat_block_A, num_elements_per_block, MPI_FLOAT,
+                root_rank_mesh_ij, info.mesh_ij);  
+
+      l = 0;
+      for ( i = 0; i < rows_per_proc; i++ ) {
+        for ( j = 0; j < rows_per_proc; j++ ) {
+          mailbox[i][j] = my_flat_block_A[l];
+          l++;
+        }
       }
+      A_block = deflattenize_matrix(my_flat_block_A,rows_per_proc,rows_per_proc);
     }
-    A_block = deflattenize_matrix(my_flat_block_A,rows_per_proc,rows_per_proc);
-  }
 
-  if ( my_rank == root_rank ) {
-    free(A_flat);
-  }
-
-  for (i = 0; i < k-1; i++ ) {
-    parallel_mm(
-      mailbox, A_block, mailbox_flat, my_cord, num_elements_per_block, 
-      rows_per_proc, &info);
-    if (my_cord[DIM_k] == 0) {
-      for (j = 0; j < rows_per_proc; j++) 
-        free(mailbox[j]);
-      free(mailbox);
+    if ( my_rank == root_rank ) {
+      free(A_flat);
     }
-    
-    mailbox = deflattenize_matrix(mailbox_flat, rows_per_proc, rows_per_proc);
-  }
 
-  if ( my_cord[DIM_k] == 0 ) {
-    MPI_Gather(mailbox_flat,
-        num_elements_per_block,
-        MPI_FLOAT,
-        C_flat,
-        num_elements_per_block,
-        MPI_FLOAT,
-        root_rank_mesh_ij,
-        info.mesh_ij);
+    for (i = 0; i < k-1; i++ ) {
+      parallel_mm(
+        mailbox, A_block, mailbox_flat, my_cord, num_elements_per_block, 
+        rows_per_proc, &info);
+      if (my_cord[DIM_k] == 0) {
+        for (j = 0; j < rows_per_proc; j++) 
+          free(mailbox[j]);
+        free(mailbox);
+      }
 
-    if (my_rank == root_rank) {
-     
-      z = 0;
-      C = allocate_zero_matrix(n,n);
-      B = allocate_zero_matrix(n,n);
-      for ( i = 0; i < cr_p; i++ ) {
-        for ( j = 0; j < cr_p; j++ ) {
-          for (l = 0; l < rows_per_proc; l++) {
-            for (m = 0; m < rows_per_proc; m++) {
-              C[i*rows_per_proc + l][j*rows_per_proc + m] = C_flat[z];
-              z++;
+      mailbox = deflattenize_matrix(mailbox_flat, rows_per_proc, rows_per_proc);
+    }
+
+    if ( my_cord[DIM_k] == 0 ) {
+      MPI_Gather(mailbox_flat,
+          num_elements_per_block,
+          MPI_FLOAT,
+          C_flat,
+          num_elements_per_block,
+          MPI_FLOAT,
+          root_rank_mesh_ij,
+          info.mesh_ij);
+#if DEBUG == 1
+      if (my_rank == root_rank) {
+      
+        z = 0;
+        C = allocate_zero_matrix(n,n);
+        B = allocate_zero_matrix(n,n);
+        for ( i = 0; i < cr_p; i++ ) {
+          for ( j = 0; j < cr_p; j++ ) {
+            for (l = 0; l < rows_per_proc; l++) {
+              for (m = 0; m < rows_per_proc; m++) {
+                C[i*rows_per_proc + l][j*rows_per_proc + m] = C_flat[z];
+                z++;
+              }
             }
           }
         }
-       }
-   
-      for ( i = 0; i < n; i++ ) {
-        for ( j = 0; j < n; j++ ) { 
-          B[i][j] = A[i][j];
+    
+        for ( i = 0; i < n; i++ ) {
+          for ( j = 0; j < n; j++ ) { 
+            B[i][j] = A[i][j];
+          }
+        }
+
+        for ( i = 0; i < k-1; i++ ) {
+          D = internal_mul(A, B, n, n);
+          free(B);
+          B = D;
+        }
+
+        for (i = 0; i < n; i++) {
+          for (j = 0; j < n; j++) {
+            if ( C[i][j] != B[i][j] )
+              printf("%f %f\n", C[i][j], B[i][j]);
+          }
         }
       }
-
-      for ( i = 0; i < k-1; i++ ) {
-        D = internal_mul(A, B, n, n);
-        free(B);
-        B = D;
-      }
-
-      for (i = 0; i < n; i++) {
-        for (j = 0; j < n; j++) {
-          if ( C[i][j] != B[i][j] )
-            printf("%f %f\n", C[i][j], B[i][j]);
-        }
-      }
+#endif
     }
+
+    final_time = MPI_Wtime();
+    time_vector[iteration] = final_time - initial_time;
+    average_time += time_vector[iteration];
   }
+  average_time = average_time/N_ITERATIONS;
 
-
-
+  if ( my_rank == root_rank ) {
+    deviation = 0;
+    for ( i = 0; i < N_ITERATIONS; i++ ) {
+      deviation += (time_vector[i] - average_time)*(time_vector[i] - average_time);
+    }
+    // compute and print the rank of the processor and the time it took to complete the task
+    printf("%f, %f\n", average_time, deviation);
+  }
   // close the MPI environment
   MPI_Finalize();
 

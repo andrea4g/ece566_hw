@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l procs=125,walltime=20:00
+#PBS -N det_job
+#PBS -q edu_shared
+
+#PBS -e output/mpitest_25_125.err
+#PBS -o output/mpitest_25_125.out
+#PBS -d ./
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np 125 ./bin/dns 25 2

@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l procs=8,walltime=20:00
+#PBS -N det_job
+#PBS -q edu_shared
+
+#PBS -e output/mpitest_4_8.err
+#PBS -o output/mpitest_4_8.out
+#PBS -d ./
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np 8 ./bin/dns 4 4

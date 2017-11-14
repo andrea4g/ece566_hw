@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l procs=Kprocs,walltime=10:00
+#PBS -l procs=Kprocs,walltime=20:00
 #PBS -N det_job
 #PBS -q edu_shared
 

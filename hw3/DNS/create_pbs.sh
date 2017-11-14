@@ -1,17 +1,19 @@
 #!/bin/bash
 
-Nelement="64";
-
-for i in {1..6}; do
-  Kprocs="4";
-  for j in {1..3}; do
-    for q in {1..5}; do
-      sed "s/Nelement/${Nelement}/g" pref.pbs > "test_${Nelement}_${Kprocs}_${q}.pbs";
-      sed -i "s/Kprocs/${Kprocs}/g" "test_${Nelement}_${Kprocs}_${q}.pbs"
-      sed -i "s/Exp/${q}/g" "test_${Nelement}_${Kprocs}_${q}.pbs"
+for a in {2..5}; do
+  for q in {2..4}; do 
+    for i in {1..4}; do
+      Nelement="$(( $a * $a ))";
+      Kprocs="$(($a*$a*$a))";
+      for j in {1..4}; do
+        if [[ $j -gt 1 ]]
+        then
+          Nelement="$(( $Nelement * 10 ))";
+        fi
+        sed "s/Nelement/${Nelement}/g" pref.pbs > "test_${Nelement}_${Kprocs}_${q}.pbs";
+        sed -i "s/Kprocs/${Kprocs}/g" "test_${Nelement}_${Kprocs}_${q}.pbs"
+        sed -i "s/Exp/${q}/g" "test_${Nelement}_${Kprocs}_${q}.pbs"
+      done
     done
-    Kprocs="$(( $Kprocs * 4 ))";
   done
-  Nelement="$(( $Nelement * 4 ))";
 done
-
