@@ -3,7 +3,7 @@
 #include <time.h>
 #include <mpi.h>
 
-#define N_ITERATIONS 1
+#define N_ITERATIONS 20
 #define DEBUG 0
 
 /*----------------------------------------------------------------------------*/
@@ -20,7 +20,6 @@ typedef float*  Flat_matrix;
 Matrix allocate_zero_matrix(int rows, int cols);
 Flat_matrix flattenize_matrix(Matrix A, int rows, int cols);
 Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols);
-void cannon(Matrix dest, Matrix src, MPI_Comm comm, int rows, int cols, int* coordsi, int num_blocks);
 void matrix_multiply(Matrix a, Matrix b, Matrix dest, int r, int c);
 Matrix copy_matrix(Matrix src, int rows, int cols);
 void print_matrix(Matrix A, int rows, int cols);
@@ -30,6 +29,7 @@ void cpy_mat(Matrix dest, Matrix src, int rows, int cols);
 Flat_matrix flat_block_matrix(int num_1D_blocks, int num_elements_1D_block, Matrix A);
 void LU_decomposition_serial(Matrix A, int n);
 float compute_det_serial(Matrix A, int n);
+void cannon(Matrix src, Matrix dest, MPI_Comm comm, int exponent, int n, int p, int sr_p, int row_per_block, int cols_per_block, int* my_cord, int my_rank, int root_rank, int* sendcounts, int* displs);
 
 /*----------------------------------------------------------------------------*/
 /*------------------------------------MAIN------------------------------------*/
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
   int my_cord[2], root_cord[2];
   int n,p;
   int exp;
-  int i,j,iteration,m,l,k;
+  int i,j,iteration;
   //float result,partial_det;
   double time_vector[N_ITERATIONS],deviation;
   double average_time, final_time, initial_time;
@@ -53,23 +53,10 @@ int main(int argc, char** argv) {
   int* sendcounts;
   int* displs;
   int dims[2];
-  //Matrix A;
-  //Flat_matrix C_serial;
-
-
-
-
-
-  Matrix A, B, C, D, copy, res;
-  Flat_matrix A_flat, B_flat, C_serial;
-  Flat_matrix res_flat;
-  Flat_matrix flatB, flatD;
+  Matrix A, C;
   int sr_p;
-  int uprank, downrank, leftrank, rightrank;
-  int shiftsource, shiftdest;
   int row_per_block;
   int cols_per_block;
-  MPI_Status status;
 
   int p_cord[2];
 
@@ -121,18 +108,17 @@ int main(int argc, char** argv) {
     // allocate the data
     A = allocate_zero_matrix(n,n);
     C = allocate_zero_matrix(n,n);
-    C_serial = (Flat_matrix) malloc(n*n*sizeof(float));
     // declare the seed
     srand(time(NULL));
+    //int v = 0;
     for (i = 0; i < n; i++) {
       for ( j = 0; j < n; j++ ) {
-      #if DEBUG
-        int v = 0;
-        A[i][j] = v;
-        v++;
-      #else
+      //#if DEBUG
+        //A[i][j] = v;
+        //v++;
+      //#else
         A[i][j] = 2*(rand() % 2) - 1;
-      #endif
+      //#endif
       }
     }
     print_matrix(A, n, n);
@@ -144,9 +130,7 @@ int main(int argc, char** argv) {
     // save initial time of the task
     initial_time = MPI_Wtime();
 
-    //cannon(k)
-
-    if (k == 1) {
+    if (exp == 1) {
     #if DEBUG
       for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
@@ -157,104 +141,23 @@ int main(int argc, char** argv) {
     #endif
     }
     else {
-      int q;
-      //int uprank, downrank, leftrank, rightrank;
-      //int shiftsource, shiftdest;
-      //Matrix B, C, D, copy, res;
-      //Flat_matrix A_flat, B_flat, res_flat;
-      //Flat_matrix flatB, flatD;
+      // cannon function call
+      cannon(A, C, mesh_comm, exp, n, p, sr_p, row_per_block, cols_per_block, my_cord, my_rank, root_rank, sendcounts, displs);
       if (my_rank == root_rank) {
-        A_flat = flat_block_matrix(sr_p, n/sr_p, A);
-      }
-      B_flat = (Flat_matrix) malloc(n*n/p*sizeof(float));
-      res = allocate_zero_matrix(row_per_block, cols_per_block);
-      D = allocate_zero_matrix(row_per_block, cols_per_block);
-      // scatter the data from source to all the processors
-      MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_rank], MPI_FLOAT, root_rank, mesh_comm);
-      B = deflattenize_matrix(B_flat, n/sr_p, n/sr_p);
-      //D = deflattenize_matrix(D_flat, n/sr_p, n/sr_p);
-      D = copy_matrix(B, n/sr_p, n/sr_p);
-      copy = copy_matrix(B, n/sr_p, n/sr_p);
-
-      for (q = 0; q < exp - 1; q++) {
-        // reset res matrix
-        for (i = 0; i < row_per_block; i++) {
-          for (j = 0; j < cols_per_block; j++) {
-            res[i][j] = 0;
-          }
-        }
-        // Shift each row_per_block by i on left
-        MPI_Cart_shift(mesh_comm, 1, -my_cord[0], &shiftsource, &shiftdest);
-        flatD = flattenize_matrix(D, row_per_block, cols_per_block);
-        MPI_Sendrecv_replace(flatD, row_per_block*cols_per_block, MPI_FLOAT, shiftdest, 1, shiftsource, 1, mesh_comm, &status);
-        //for (i = 0; i < row_per_block*cols_per_block; i++) {
-        //  printf("D_flat --(%d,%d) - %f\n", my_cord[0], my_cord[1], flatD[i]);
-        //}
-        D = deflattenize_matrix(flatD, row_per_block, cols_per_block);
-        // Shift each column up by j
-        MPI_Cart_shift(mesh_comm, 0, -my_cord[1], &shiftsource, &shiftdest);
-        flatB = flattenize_matrix(B, row_per_block, cols_per_block);
-        MPI_Sendrecv_replace(flatB, row_per_block*cols_per_block, MPI_FLOAT, shiftdest, 1, shiftsource, 1, mesh_comm, &status);
-        //for (i = 0; i < row_per_block*cols_per_block; i++) {
-        //  printf("B_flat --(%d,%d) - %f\n", my_cord[0], my_cord[1], flatB[i]);
-        //}
-        B = deflattenize_matrix(flatB, row_per_block, cols_per_block);
-        //printf("QUI zio\n");
-        for (j = 0; j < sr_p; j++) {
-          matrix_multiply(D, B, res, row_per_block, cols_per_block); // D += D*B
-          //left circ by 1
-          MPI_Cart_shift(mesh_comm, 1, -1, &rightrank, &leftrank);
-          flatD = flattenize_matrix(D, row_per_block, cols_per_block);
-          //printf("ciaone\n");
-          MPI_Sendrecv_replace(flatD, row_per_block*cols_per_block, MPI_FLOAT, leftrank, 1, rightrank, 1, mesh_comm, &status);
-          //for (i = 0; i < row_per_block*cols_per_block; i++) {
-          //  printf("D_flat --(%d,%d) - %f\n", my_cord[0], my_cord[1], flatD[i]);
-          //}
-          D = deflattenize_matrix(flatD, row_per_block, cols_per_block);
-          //up circ by 1
-          MPI_Cart_shift(mesh_comm, 0, -1, &downrank, &uprank);
-          flatB = flattenize_matrix(B, row_per_block, cols_per_block);
-          MPI_Sendrecv_replace(flatB, row_per_block*cols_per_block, MPI_FLOAT, uprank, 1, downrank, 1, mesh_comm, &status);
-          B = deflattenize_matrix(flatB, row_per_block, cols_per_block);
-        }
-        // copy res into D
-        for (i = 0; i < row_per_block; i++) {
-          for (j = 0; j < cols_per_block; j++) {
-            B[i][j] = copy[i][j];
-            D[i][j] = res[i][j];
-          }
-        }
-        res_flat = flattenize_matrix(res, row_per_block, cols_per_block);
-      }
-      MPI_Gather(res_flat, row_per_block*cols_per_block, MPI_FLOAT, C_serial, row_per_block*cols_per_block, MPI_FLOAT, 0, mesh_comm);
-
-      if (my_rank == 0) {
-        k = 0;
-        for (i = 0; i < sr_p; i++ ) {
-          for (j = 0; j < sr_p; j++ ) {
-            for (l = 0; l < row_per_block; l++) {
-              for (m = 0; m < cols_per_block; m++) {
-                C[i*row_per_block + l][j*cols_per_block + m] = C_serial[k];
-                k++;
-              }
-            }
-          }
-        }
-
       #if DEBUG
+        /*
         for (i = 0; i < n; i++) {
           for (j = 0; j < n; j++) {
             printf("res = %.2f\t", C[i][j]);
           }
           printf("\n");
         }
+        */
         Matrix test, fin;
         test = allocate_zero_matrix(n,n);
         fin = allocate_zero_matrix(n,n);
         matrix_multiply(A, A, test, n, n);
         matrix_multiply(test, A, fin, n, n);
-        printf("\n");
-        printf("\n");
         for (i = 0; i < n; i++) {
           for (j = 0; j < n; j++) {
             //printf("test = %.2f\t", test[i][j]);
@@ -293,7 +196,110 @@ int main(int argc, char** argv) {
 /*-------------------------------FUNCTIONS------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
-void cannon(Matrix dest, Matrix src, MPI_Comm comm, int rows, int cols, int* coords, int num_blocks) {
+void cannon(Matrix src, // source matrix
+    Matrix dest,        // destination matrix
+    MPI_Comm comm,      // communicator
+    int exponent,       // exponent
+    int n,              // matrix dimension
+    int p,              // number of processors
+    int sr_p,           // square root of the processors
+    int row_per_block,  // number of rows in the block
+    int cols_per_block, // number of columns in the block
+    int* my_cord,      // coordinates of the topology
+    int my_rank,        // rank
+    int root_rank,      // rank of the root
+    int* sendcounts,
+    int* displs
+    )
+{
+
+  int q, i, j, k, l, m;
+  int uprank, downrank, leftrank, rightrank;
+  int shiftsource, shiftdest;
+  Matrix B, D, copy, res;
+  Flat_matrix A_flat, B_flat, res_flat, C_serial;
+  Flat_matrix flatB, flatD;
+  MPI_Status status;
+
+  if (my_rank == root_rank) {
+    C_serial = (Flat_matrix) malloc(n*n*sizeof(float));
+    A_flat = flat_block_matrix(sr_p, n/sr_p, src);
+  }
+  B_flat = (Flat_matrix) malloc(n*n/p*sizeof(float));
+  res = allocate_zero_matrix(row_per_block, cols_per_block);
+  D = allocate_zero_matrix(row_per_block, cols_per_block);
+  // scatter the data from source to all the processors
+  MPI_Scatterv(A_flat, sendcounts, displs, MPI_FLOAT, B_flat, sendcounts[my_rank], MPI_FLOAT, root_rank, comm);
+  B = deflattenize_matrix(B_flat, row_per_block, cols_per_block);
+  //D = deflattenize_matrix(D_flat, n/sr_p, n/sr_p);
+  D = copy_matrix(B, row_per_block, cols_per_block);
+  copy = copy_matrix(B, row_per_block, cols_per_block);
+
+  for (q = 0; q < exponent - 1; q++) {
+    // reset res matrix
+    for (i = 0; i < row_per_block; i++) {
+      for (j = 0; j < cols_per_block; j++) {
+        res[i][j] = 0;
+      }
+    }
+    // Shift each row_per_block by i on left
+    MPI_Cart_shift(comm, 1, -my_cord[0], &shiftsource, &shiftdest);
+    flatD = flattenize_matrix(D, row_per_block, cols_per_block);
+    MPI_Sendrecv_replace(flatD, row_per_block*cols_per_block, MPI_FLOAT, shiftdest, 1, shiftsource, 1, comm, &status);
+    //for (i = 0; i < row_per_block*cols_per_block; i++) {
+    //  printf("D_flat --(%d,%d) - %f\n", my_cord[0], my_cord[1], flatD[i]);
+    //}
+    D = deflattenize_matrix(flatD, row_per_block, cols_per_block);
+    // Shift each column up by j
+    MPI_Cart_shift(comm, 0, -my_cord[1], &shiftsource, &shiftdest);
+    flatB = flattenize_matrix(B, row_per_block, cols_per_block);
+    MPI_Sendrecv_replace(flatB, row_per_block*cols_per_block, MPI_FLOAT, shiftdest, 1, shiftsource, 1, comm, &status);
+    //for (i = 0; i < row_per_block*cols_per_block; i++) {
+    //  printf("B_flat --(%d,%d) - %f\n", my_cord[0], my_cord[1], flatB[i]);
+    //}
+    B = deflattenize_matrix(flatB, row_per_block, cols_per_block);
+    //printf("QUI zio\n");
+    for (j = 0; j < sr_p; j++) {
+      matrix_multiply(D, B, res, row_per_block, cols_per_block); // D += D*B
+      //left circ by 1
+      MPI_Cart_shift(comm, 1, -1, &rightrank, &leftrank);
+      flatD = flattenize_matrix(D, row_per_block, cols_per_block);
+      //printf("ciaone\n");
+      MPI_Sendrecv_replace(flatD, row_per_block*cols_per_block, MPI_FLOAT, leftrank, 1, rightrank, 1, comm, &status);
+      //for (i = 0; i < row_per_block*cols_per_block; i++) {
+      //  printf("D_flat --(%d,%d) - %f\n", my_cord[0], my_cord[1], flatD[i]);
+      //}
+      D = deflattenize_matrix(flatD, row_per_block, cols_per_block);
+      //up circ by 1
+      MPI_Cart_shift(comm, 0, -1, &downrank, &uprank);
+      flatB = flattenize_matrix(B, row_per_block, cols_per_block);
+      MPI_Sendrecv_replace(flatB, row_per_block*cols_per_block, MPI_FLOAT, uprank, 1, downrank, 1, comm, &status);
+      B = deflattenize_matrix(flatB, row_per_block, cols_per_block);
+    }
+    // copy res into D
+    for (i = 0; i < row_per_block; i++) {
+      for (j = 0; j < cols_per_block; j++) {
+        B[i][j] = copy[i][j];
+        D[i][j] = res[i][j];
+      }
+    }
+  }
+  res_flat = flattenize_matrix(res, row_per_block, cols_per_block);
+  MPI_Gather(res_flat, row_per_block*cols_per_block, MPI_FLOAT, C_serial, row_per_block*cols_per_block, MPI_FLOAT, 0, comm);
+  // reoder the matrc in the root rank
+  if (my_rank == 0) {
+    k = 0;
+    for (i = 0; i < sr_p; i++ ) {
+      for (j = 0; j < sr_p; j++ ) {
+        for (l = 0; l < row_per_block; l++) {
+          for (m = 0; m < cols_per_block; m++) {
+            dest[i*row_per_block + l][j*cols_per_block + m] = C_serial[k];
+            k++;
+          }
+        }
+      }
+    }
+  }
 }
 
 /*----------------------------------------------------------------------------*/
