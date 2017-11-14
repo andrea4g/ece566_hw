@@ -3,10 +3,10 @@
 #PBS -N cannon_job
 #PBS -q edu_shared
 
-#PBS -e ./output/mpitest.err
-#PBS -o ./output/mpitest.out
+#PBS -e output/mpitest_84_64_2.err
+#PBS -o output/mpitest_84_64_2.out
 #PBS -d ./
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/cannon 200 3
+mpirun -machinefile $PBS_NODEFILE -np 64 ./bin/cannon 84 2
