@@ -70,9 +70,6 @@ int main(int argc, char** argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &p);
   // Compute the square root.
   sr_p = square_root(p);
-//#if DEBUG
-//  printf("p = %d, sr_p = %d\n", p, sr_p);
-//#endif
   // save the number of row_per_block and cols_per_block for which each processor is in charge
   row_per_block = n / sr_p;
   cols_per_block = n / sr_p;
@@ -113,16 +110,10 @@ int main(int argc, char** argv) {
     //int v = 0;
     for (i = 0; i < n; i++) {
       for ( j = 0; j < n; j++ ) {
-      //#if DEBUG
-        //A[i][j] = v;
-        //v++;
-      //#else
         A[i][j] = 2*(rand() % 2) - 1;
-      //#endif
       }
     }
     print_matrix(A, n, n);
-    //A_flat = flat_block_matrix(sr_p, n/sr_p, A);
   }
 
   average_time = 0;
@@ -141,34 +132,7 @@ int main(int argc, char** argv) {
     #endif
     }
     else {
-      // cannon function call
       cannon(A, C, mesh_comm, exp, n, p, sr_p, row_per_block, cols_per_block, my_cord, my_rank, root_rank, sendcounts, displs);
-      //if (my_rank == root_rank) {
-      //#if DEBUG
-      //  /*
-      //  for (i = 0; i < n; i++) {
-      //    for (j = 0; j < n; j++) {
-      //      printf("res = %.2f\t", C[i][j]);
-      //    }
-      //    printf("\n");
-      //  }
-      //  */
-      //  Matrix test, fin;
-      //  test = allocate_zero_matrix(n,n);
-      //  fin = allocate_zero_matrix(n,n);
-      //  matrix_multiply(A, A, test, n, n);
-      //  matrix_multiply(test, A, fin, n, n);
-      //  for (i = 0; i < n; i++) {
-      //    for (j = 0; j < n; j++) {
-      //      //printf("test = %.2f\t", test[i][j]);
-      //      if (fin[i][j] != C[i][j]) {
-      //        printf("different (%d,%d) = [%f][%f]\n", i, j, C[i][j], fin[i][j]);
-      //      }
-      //    }
-      //    //printf("\n");
-      //  }
-      //#endif
-      //}
     }
     final_time = MPI_Wtime();
     time_vector[iteration] = final_time - initial_time;
@@ -176,8 +140,11 @@ int main(int argc, char** argv) {
   }
   average_time = average_time/N_ITERATIONS;
 
-
   if ( my_rank == root_rank ) {
+#if DEBUG == 1
+    printf("Det A:%f\n",compute_det_serial(A,n));
+    printf("Det C with k=%d : %f\n", k, compute_det_serial(C,n));
+#endif
     deviation = 0;
     for ( i = 0; i < N_ITERATIONS; i++ ) {
       deviation += (time_vector[i] - average_time)*(time_vector[i] - average_time);

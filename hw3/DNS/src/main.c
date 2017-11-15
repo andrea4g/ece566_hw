@@ -242,6 +242,10 @@ int main(int argc, char** argv) {
   average_time = average_time/N_ITERATIONS;
 
   if ( my_rank == root_rank ) {
+#if DEBUG == 1
+    printf("Det A:%f\n",compute_det_serial(A,n));
+    printf("Det C with k=%d : %f\n", k, compute_det_serial(C,n));
+#endif
     deviation = 0;
     for ( i = 0; i < N_ITERATIONS; i++ ) {
       deviation += (time_vector[i] - average_time)*(time_vector[i] - average_time);
