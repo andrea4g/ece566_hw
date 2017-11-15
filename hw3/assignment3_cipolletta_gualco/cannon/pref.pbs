@@ -1,6 +1,6 @@
 #!/bin/bash
-#PBS -l procs=Kprocs,walltime=20:00
-#PBS -N dns_job
+#PBS -l procs=Kprocs,walltime=10:00
+#PBS -N cannon_job
 #PBS -q edu_shared
 
 #PBS -e output/mpitest_Nelement_Kprocs_Exp.err
@@ -9,4 +9,4 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np Kprocs ./bin/dns Nelement Exp 0 20 40
+mpirun -machinefile $PBS_NODEFILE -np Kprocs ./bin/cannon Nelement Exp 0 20 20
