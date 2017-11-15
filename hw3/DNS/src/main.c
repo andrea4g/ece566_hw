@@ -4,7 +4,7 @@
 #include <mpi.h>
 #include <string.h>
 
-#define N_ITERATIONS 20
+#define N_ITERATIONS 1
 #define DEBUG 0
 
 #define DIM_i 0
@@ -42,7 +42,7 @@ Flat_matrix flattenize_matrix(Matrix A, int rows, int cols);
 Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols );
 Flat_matrix flat_block_matrix(int num_1D_blocks, int num_elements_1D_block, Matrix A);
 Matrix internal_mul(Matrix A, Matrix B, int rows, int cols);
-parse_input(int argc, char** argv, Matrix X, int n );
+void parse_input(int argc, char** argv, Matrix X, int n );
 
 void print_matrix(Matrix A, int rows, int cols);
 void LU_decomposition( int p, int sr_p, Matrix A, int* my_cord, int n, int* rows_division, MPI_Comm comm);
@@ -80,13 +80,13 @@ int main(int argc, char** argv) {
   int root_rank,my_rank;
   int my_cord[3], root_cord[3];
   int n,p;
-  int i,j,iteration,m,l,k,z;
+  int i,j,iteration,l,k,z,m;
   int rows_per_proc;
   int num_elements_per_block;
   double time_vector[N_ITERATIONS],deviation;
   double average_time, final_time, initial_time;
   // pointer declaration
-  Matrix A, B, C, D, mailbox;
+  Matrix A, mailbox, B,C,D;
   Matrix A_block;
   Flat_matrix A_flat, C_flat;
   int cr_p;
@@ -136,9 +136,9 @@ int main(int argc, char** argv) {
   if ( my_rank == root_rank) {
     // Allocate the data
     A = allocate_zero_matrix(n,n);
-
+    
     parse_input(argc, command_line, A, n );
-
+    
 #if DEBUG == 1
     print_matrix(A, n, n);
 #endif
@@ -177,7 +177,6 @@ int main(int argc, char** argv) {
       A_block = deflattenize_matrix(my_flat_block_A,rows_per_proc,rows_per_proc);
     }
 
-
     for (i = 0; i < k-1; i++ ) {
       parallel_mm(
         mailbox, A_block, mailbox_flat, my_cord, num_elements_per_block, 
@@ -187,10 +186,9 @@ int main(int argc, char** argv) {
           free(mailbox[j]);
         free(mailbox);
       }
-
       mailbox = deflattenize_matrix(mailbox_flat, rows_per_proc, rows_per_proc);
     }
-
+   
     if ( my_cord[DIM_k] == 0 ) {
       MPI_Gather(mailbox_flat,
           num_elements_per_block,
@@ -268,7 +266,7 @@ int main(int argc, char** argv) {
 /*----------------------------------------------------------------------------*/
 
 
-void parse_input(int argc, char** argv, int** X, int n ) {
+void parse_input(int argc, char** argv, Matrix X, int n ) {
 
   int sel;
   int p1,p2; // p1 is the prob of -1 and p2 is prob of +1
@@ -318,6 +316,8 @@ void parse_input(int argc, char** argv, int** X, int n ) {
       }
     }
   }
+
+  free(A);
 
 }
 
@@ -484,6 +484,7 @@ void parallel_mm(
       info->ring_k);
   
   free(my_flat_block_C);
+
 
 }
 
