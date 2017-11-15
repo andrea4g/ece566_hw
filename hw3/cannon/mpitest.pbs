@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l procs=64,walltime=10:00
+#PBS -l procs=4,walltime=10:00
 #PBS -N cannon_job
 #PBS -q edu_shared
 
@@ -9,4 +9,4 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/cannon 200 3
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/cannon 4 4 0 40 50

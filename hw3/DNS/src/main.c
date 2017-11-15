@@ -4,7 +4,7 @@
 #include <mpi.h>
 #include <string.h>
 
-#define N_ITERATIONS 1
+#define N_ITERATIONS 20
 #define DEBUG 0
 
 #define DIM_i 0
@@ -100,6 +100,7 @@ int main(int argc, char** argv) {
     command_line[i] = strdup(argv[i]);
   }
   
+ 
   // save in n the linear dimension of the Matrix
   n = atoi(argv[1]);
   // save the exponent of the matrix power
@@ -180,13 +181,15 @@ int main(int argc, char** argv) {
     for (i = 0; i < k-1; i++ ) {
       parallel_mm(
         mailbox, A_block, mailbox_flat, my_cord, num_elements_per_block, 
-        rows_per_proc, &info);
+        rows_per_proc, &info); 
+      
       if (my_cord[DIM_k] == 0) {
         for (j = 0; j < rows_per_proc; j++) 
           free(mailbox[j]);
         free(mailbox);
+      
+        mailbox = deflattenize_matrix(mailbox_flat, rows_per_proc, rows_per_proc);
       }
-      mailbox = deflattenize_matrix(mailbox_flat, rows_per_proc, rows_per_proc);
     }
    
     if ( my_cord[DIM_k] == 0 ) {

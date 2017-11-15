@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include <mpi.h>
+#include <string.h>
 
-#define N_ITERATIONS 20
-#define DEBUG 0
+#define N_ITERATIONS 1
+#define DEBUG 1
 
 /*----------------------------------------------------------------------------*/
 /*-------------------------------TYPES DEFINITION-----------------------------*/
@@ -144,7 +145,7 @@ int main(int argc, char** argv) {
   if ( my_rank == root_rank ) {
 #if DEBUG == 1
     printf("Det A:%f\n",compute_det_serial(A,n));
-    printf("Det C with k=%d : %f\n", k, compute_det_serial(C,n));
+    printf("Det C with k=%d : %f\n", exp, compute_det_serial(C,n));
 #endif
     deviation = 0;
     for ( i = 0; i < N_ITERATIONS; i++ ) {
@@ -164,7 +165,7 @@ int main(int argc, char** argv) {
 /*-------------------------------FUNCTIONS------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
-void parse_input(int argc, char** argv, int** X, int n ) {
+void parse_input(int argc, char** argv, Matrix X, int n ) {
 
   int sel;
   int p1,p2; // p1 is the prob of -1 and p2 is prob of +1
@@ -504,7 +505,7 @@ float compute_det_serial(Matrix A, int n) {
 }
 
 
-/* void LU_decomposition_serial(Matrix A, int n) { */
+ void LU_decomposition_serial(Matrix A, int n) { 
 
   int i,j,k;
   float sum;
