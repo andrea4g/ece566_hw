@@ -259,6 +259,59 @@ int main(int argc, char** argv) {
 /*-------------------------------FUNCTIONS------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
+parse_input(int argc, char** argv, Matrix X, int n ) {
+
+  int sel;
+  int p1,p2; // p1 is the prob of -1 and p2 is prob of +1
+  int seq[4];
+  int i,j,k;
+  
+
+  sel = atoi(argv[3]);
+
+  if ( sel == 0 ) {
+    p1 = atoi(argv[4]);
+    p2 = atoi(argv[5]);
+    
+    srand(time(NULL));
+    for (i = 0; i < n; i++) {
+      for ( j = 0; j < n; j++) {
+        r = rand() % 100;
+        if ( r < p1 ) {
+          X[i][j] = -1;
+        } else {
+          if ( r < p1 + p2) {
+            X[i][j] = 1; 
+          } else {
+            X[i][j] = 0;
+          }
+        }
+      } 
+    }
+  } else {
+    for ( i = 0; i < 4; i++ ) {
+      seq[i] = atoi(argv[4 + i]);
+    }
+    for ( i = 0; i < n; i++ ) {
+      A[i] = seq[i % 4];
+    }
+    for ( i = 0; i < n; i++ ) {
+      k = (i+1)*(i+2)/2;
+      for ( j = 0; j < n; j++ ) {
+        X[i][j] = A[(j - k) % n];
+      }
+    }
+  }
+
+}
+
+
+
+
+
+
+
+
 void create_topology_info(
       struct Topology_info* info
      ) {
