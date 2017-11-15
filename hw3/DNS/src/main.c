@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <mpi.h>
+#include <string.h>
 
 #define N_ITERATIONS 20
 #define DEBUG 0
@@ -41,6 +42,7 @@ Flat_matrix flattenize_matrix(Matrix A, int rows, int cols);
 Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols );
 Flat_matrix flat_block_matrix(int num_1D_blocks, int num_elements_1D_block, Matrix A);
 Matrix internal_mul(Matrix A, Matrix B, int rows, int cols);
+parse_input(int argc, char** argv, Matrix X, int n );
 
 void print_matrix(Matrix A, int rows, int cols);
 void LU_decomposition( int p, int sr_p, Matrix A, int* my_cord, int n, int* rows_division, MPI_Comm comm);
@@ -91,6 +93,13 @@ int main(int argc, char** argv) {
   int root_rank_mesh_ij;
   Flat_matrix my_flat_block_A;
   Flat_matrix mailbox_flat;
+  char** command_line;
+  
+  command_line = (char **) malloc(argc*sizeof(char*));
+  for ( i = 0; i < argc; i++ ) {
+    command_line[i] = strdup(argv[i]);
+  }
+  
   // save in n the linear dimension of the Matrix
   n = atoi(argv[1]);
   // save the exponent of the matrix power
@@ -127,14 +136,9 @@ int main(int argc, char** argv) {
   if ( my_rank == root_rank) {
     // Allocate the data
     A = allocate_zero_matrix(n,n);
-    
-    // declare the seed
-    srand(time(NULL));
-    for (i = 0; i < n; i++) {
-      for ( j = 0; j < n; j++ ) {
-        A[i][j] = 2*(rand() % 2) - 1;
-      }
-    }
+
+    parse_input(argc, command_line, A, n );
+
 #if DEBUG == 1
     print_matrix(A, n, n);
 #endif
@@ -263,20 +267,24 @@ int main(int argc, char** argv) {
 /*-------------------------------FUNCTIONS------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
-parse_input(int argc, char** argv, Matrix X, int n ) {
+
+void parse_input(int argc, char** argv, int** X, int n ) {
 
   int sel;
   int p1,p2; // p1 is the prob of -1 and p2 is prob of +1
   int seq[4];
   int i,j,k;
-  
+  int r,idx; 
+  int* A;
 
+
+  A = (int*) malloc(n*sizeof(int));
   sel = atoi(argv[3]);
 
   if ( sel == 0 ) {
     p1 = atoi(argv[4]);
     p2 = atoi(argv[5]);
-    
+
     srand(time(NULL));
     for (i = 0; i < n; i++) {
       for ( j = 0; j < n; j++) {
@@ -302,17 +310,16 @@ parse_input(int argc, char** argv, Matrix X, int n ) {
     for ( i = 0; i < n; i++ ) {
       k = (i+1)*(i+2)/2;
       for ( j = 0; j < n; j++ ) {
-        X[i][j] = A[(j - k) % n];
+        idx = (j - k) % n;
+        if ( idx < 0 )
+          X[i][j] = A[n + idx];
+        else
+          X[i][j] = A[idx];
       }
     }
   }
 
 }
-
-
-
-
-
 
 
 

@@ -16,7 +16,7 @@ typedef float*  Flat_matrix;
 /*----------------------------------------------------------------------------*/
 /*-------------------------------FUNCTION PROTOTYPES--------------------------*/
 /*----------------------------------------------------------------------------*/
-
+void parse_input(int argc, char** argv, Matrix X, int n );
 Matrix allocate_zero_matrix(int rows, int cols);
 Flat_matrix flattenize_matrix(Matrix A, int rows, int cols);
 Matrix deflattenize_matrix(Flat_matrix fmat, int rows, int cols);
@@ -59,7 +59,12 @@ int main(int argc, char** argv) {
   int cols_per_block;
 
   int p_cord[2];
-
+  char** command_line;
+  
+  command_line = (char **) malloc(argc*sizeof(char*));
+  for ( i = 0; i < argc; i++ ) {
+    command_line[i] = strdup(argv[i]);
+  }
   // save in n the dimension of the Matrix
   n = atoi(argv[1]);
   // save the exponent
@@ -105,15 +110,11 @@ int main(int argc, char** argv) {
     // allocate the data
     A = allocate_zero_matrix(n,n);
     C = allocate_zero_matrix(n,n);
-    // declare the seed
-    srand(time(NULL));
-    //int v = 0;
-    for (i = 0; i < n; i++) {
-      for ( j = 0; j < n; j++ ) {
-        A[i][j] = 2*(rand() % 2) - 1;
-      }
-    }
+    parse_input(argc, command_line, A, n );
+#if DEBUG==1
     print_matrix(A, n, n);
+#endif
+   
   }
 
   average_time = 0;
@@ -163,6 +164,58 @@ int main(int argc, char** argv) {
 /*-------------------------------FUNCTIONS------------------------------------*/
 /*----------------------------------------------------------------------------*/
 
+void parse_input(int argc, char** argv, int** X, int n ) {
+
+  int sel;
+  int p1,p2; // p1 is the prob of -1 and p2 is prob of +1
+  int seq[4];
+  int i,j,k;
+  int r,idx; 
+  int* A;
+
+
+  A = (int*) malloc(n*sizeof(int));
+  sel = atoi(argv[3]);
+
+  if ( sel == 0 ) {
+    p1 = atoi(argv[4]);
+    p2 = atoi(argv[5]);
+
+    srand(time(NULL));
+    for (i = 0; i < n; i++) {
+      for ( j = 0; j < n; j++) {
+        r = rand() % 100;
+        if ( r < p1 ) {
+          X[i][j] = -1;
+        } else {
+          if ( r < p1 + p2) {
+            X[i][j] = 1; 
+          } else {
+            X[i][j] = 0;
+          }
+        }
+      } 
+    }
+  } else {
+    for ( i = 0; i < 4; i++ ) {
+      seq[i] = atoi(argv[4 + i]);
+    }
+    for ( i = 0; i < n; i++ ) {
+      A[i] = seq[i % 4];
+    }
+    for ( i = 0; i < n; i++ ) {
+      k = (i+1)*(i+2)/2;
+      for ( j = 0; j < n; j++ ) {
+        idx = (j - k) % n;
+        if ( idx < 0 )
+          X[i][j] = A[n + idx];
+        else
+          X[i][j] = A[idx];
+      }
+    }
+  }
+
+}
 void cannon(Matrix src, // source matrix
     Matrix dest,        // destination matrix
     MPI_Comm comm,      // communicator
@@ -451,7 +504,7 @@ float compute_det_serial(Matrix A, int n) {
 }
 
 
-void LU_decomposition_serial(Matrix A, int n) {
+/* void LU_decomposition_serial(Matrix A, int n) { */
 
   int i,j,k;
   float sum;
