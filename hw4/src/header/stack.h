@@ -1,0 +1,16 @@
+#ifndef STACK_H
+#define STACK_H
+#include <stdlib.h>
+#include "path.h"
+
+typedef struct stack* Stack;
+
+Stack init_stack();
+int push(Stack s, Path p, int c);
+int stack_empty(Stack s);
+int pop(Stack s, Path* p, int* c);
+int finalize_stack(Stack s);
+int insert_stack(Stack src, Stack dest);
+Stack split_stack(Stack org_s);
+
+#endif
