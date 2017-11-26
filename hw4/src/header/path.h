@@ -16,6 +16,6 @@ int extract_last_node(Path p);
 int extract_fist_node(Path p);
 int visited(Path p, int node);
 void print_path(Path p);
-
-
+int get_dimension_path(Path p);
+Path copy_path(Path p);
 #endif

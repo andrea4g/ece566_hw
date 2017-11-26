@@ -9,12 +9,11 @@ struct stack{
 
 struct node {
   Path p;
-  int cost;
   link next_node;
 };
 
 
-link create_new_node(Path p, int c);
+link create_new_node(Path p);
 
   
 Stack init_stack() {
@@ -28,7 +27,7 @@ Stack init_stack() {
   return s;
 }
 
-link create_new_node(Path p, int c) {
+link create_new_node(Path p) {
   link l;
 
   l = malloc(sizeof(struct node));
@@ -37,19 +36,18 @@ link create_new_node(Path p, int c) {
     return NULL;
 
   l->p = p;
-  l->cost = c;
   return l;
 }
 
 
-int push(Stack s, Path p,int c) {
+int push(Stack s, Path p) {
 
   link l;
 
   if ( s == NULL ) 
     return 1;
 
-  l = create_new_node(p,c);
+  l = create_new_node(p);
   if ( l == NULL )
     return 1;
 
@@ -65,7 +63,7 @@ int stack_empty(Stack s) {
   return (s->count == 0);
 }
 
-int pop(Stack s, Path* p, int* c) {
+int pop(Stack s, Path* p) {
 
   link l;
 
@@ -77,13 +75,11 @@ int pop(Stack s, Path* p, int* c) {
   s->count--;
 
   *p = l->p;
-  *c = l->cost;
 
   free(l);
 
   return 0;
 }
-
 
 int finalize_stack(Stack s) {
 

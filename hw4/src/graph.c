@@ -79,3 +79,13 @@ int get_edge_cost(Graph g, int node_src, int node_dst) {
   return g->adj_matrix[node_src][node_dst];
 
 }
+
+
+int min_edge(Graph g, int node) {
+
+  return g->min_edge[node];
+}
+
+int sec_min_edge(Graph g,int node) {
+  return g->sec_min_edge[node];
+}

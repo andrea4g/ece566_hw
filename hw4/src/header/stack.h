@@ -6,9 +6,9 @@
 typedef struct stack* Stack;
 
 Stack init_stack();
-int push(Stack s, Path p, int c);
+int push(Stack s, Path p);
 int stack_empty(Stack s);
-int pop(Stack s, Path* p, int* c);
+int pop(Stack s, Path* p);
 int finalize_stack(Stack s);
 int insert_stack(Stack src, Stack dest);
 Stack split_stack(Stack org_s);

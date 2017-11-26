@@ -3,11 +3,16 @@
 #include <time.h>
 #include <mpi.h>
 #include <string.h>
+#include "header/path.h"
+#include "header/stack.h"
+#include "header/graph.h"
+
 
 #define N_ITERATIONS      1
 #define DEBUG             1
 
 #define ROOT_RANK         0
+#define HOMETOWN          0
 
 #define TERMINATION       0
 #define REQUEST_WORK      1
@@ -37,14 +42,17 @@
 int main(int argc, char** argv) {
 
   // variable declaration
-  int root_rank,my_rank;
+  int my_rank;
   int p;
   int i,j,iteration;
   double time_vector[N_ITERATIONS],deviation;
   double average_time, final_time, initial_time;
-  // pointer declaration
-  int dims[2];
-  Matrix A, C;
+  int n;
+  int** adj_matrix;
+  int* buffer;
+  Stack s;
+  Graph g;
+  Path p;
 
   // Initialize MPI environment
   MPI_Init(&argc, &argv);
@@ -52,18 +60,50 @@ int main(int argc, char** argv) {
   MPI_Comm_size(MPI_COMM_WORLD, &p);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
-  root_rank = 0;
 
   // if it is the root processor
-  if (my_rank == root_rank) {
-    
+  if (my_rank == ROOT_RANK) {
+    adj_matrix = read_matrix_from_file(argv[1],&n);
+    buffer = malloc(n*n*sizeof(int));
+    for ( i = 0; i < n; i++ ) {
+      for (j = 0; j < n; j++ ) {
+        buffer[i*n + j] = adj_matrix[i][j];
+      }
+    }
   }
+
+  MPI_Bcast(&n,1,MPI_INT, ROOT_RANK,MPI_COMM_WORLD);
+  if ( my_rank != ROOT_RANK) {
+    buffer = malloc(n*n*sizeof(int));
+    for ( i = 0; i < n; i++ ) {
+      adj_matrix[i] = malloc(n*sizeof(int));
+    }
+  }
+
+  MPI_Bcast(buffer, n*n, MPI_INT, ROOT_RANK,MPI_COMM_WORLD);
+
+  for ( i = 0; i < n; i++ ) {
+    for (j = 0; j < n; j++ ) {
+      adj_matrix[i][j] = buffer[i*n + j];
+    }
+  }
+
+  g = init_graph(n,adj_matrix);
+  s = init_stack();
 
   average_time = 0;
   for ( iteration = 0; iteration < N_ITERATIONS; iteration++ ) {
     // save initial time of the task
     initial_time = MPI_Wtime();
-    
+    if ( my_rank == ROOT_RANK ) {
+      est_tour_cost = 0;
+      for ( i = 0; i < n; i++ ) {
+        est_tour_cost += (min_edge(g,HOMETOWN) + sec_min_edge(g,HOMETOWN))/2;
+      }
+      p = init_path(n,est_tour_cost);
+      add_node(p, HOMETOWN);
+      push(s,p);
+    }
   }
   average_time = average_time/N_ITERATIONS;
 
@@ -86,6 +126,58 @@ int main(int argc, char** argv) {
 /*----------------------------------------------------------------------------*/
 /*-------------------------------FUNCTIONS------------------------------------*/
 /*----------------------------------------------------------------------------*/
+int tsp_best_solution() {
+
+  int new_act_best_sol_cost, act_best_sol_cost;
+
+  flag = 1;
+  act_best_sol_cost = -1;
+
+  while( flag ) {
+    if ( stack_empty(s) ) {
+      flag = !terminate();
+    } else {
+      new_act_best_sol_cost = work();
+      if ( new_act_best_sol_cost != act_best_sol_cost ) {
+        broadcast();
+      }
+      serve_pendant_requests();
+    }
+  }
+
+  cleanup_messages();
+
+  return act_best_sol_cost;
+
+}
+
+
+
+int** read_matrix_from_file(char* filename,int* n) {
+
+  FILE* fid;
+  int num_nodes;
+  int** mat;
+
+  fid = fopen(filename,"r");
+
+  fscanf(fid,"%d",&num_nodes);
+  mat = malloc(num_nodes*sizeof(int*));
+  for ( i = 0; i < num_nodes; i++ ) {
+    mat[i] = malloc(num_nodes*sizeof(int));
+    for ( j = 0; j < num_nodes; j++ ) {
+      fscanf(fid,"%d",&matrix[i][j]);
+    }
+  }
+
+  return mat;
+
+}
+
+
+
+
+
 int Work(Graph g, Stack s, int act_best_sol_cost, Path* best_tour) {
 
   Path p;
@@ -120,8 +212,9 @@ int Work(Graph g, Stack s, int act_best_sol_cost, Path* best_tour) {
           }
         }
       }
-      count++;
     }
+    count++;
+    finalize_path(p);
   }
 
   return act_best_sol_cost;
