@@ -75,6 +75,7 @@ int main(int argc, char** argv) {
   MPI_Bcast(&n,1,MPI_INT, ROOT_RANK,MPI_COMM_WORLD);
   if ( my_rank != ROOT_RANK) {
     buffer = malloc(n*n*sizeof(int));
+    adj_matrix = malloc(n*sizeof(int *));
     for ( i = 0; i < n; i++ ) {
       adj_matrix[i] = malloc(n*sizeof(int));
     }
@@ -98,12 +99,13 @@ int main(int argc, char** argv) {
     if ( my_rank == ROOT_RANK ) {
       est_tour_cost = 0;
       for ( i = 0; i < n; i++ ) {
-        est_tour_cost += (min_edge(g,HOMETOWN) + sec_min_edge(g,HOMETOWN))/2;
+        est_tour_cost += (min_edge(g,i) + sec_min_edge(g,i))/2;
       }
       p = init_path(n,est_tour_cost);
       add_node(p, HOMETOWN);
       push(s,p);
     }
+    tsp
   }
   average_time = average_time/N_ITERATIONS;
 
@@ -111,6 +113,7 @@ int main(int argc, char** argv) {
 
     deviation = 0;
     for ( i = 0; i < N_ITERATIONS; i++ ) {
+
       deviation += (time_vector[i] - average_time)*(time_vector[i] - average_time);
     }
     // compute and print the rank of the processor and the time it took to complete the task
@@ -132,7 +135,6 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank) {
   int proc_color;
 
   proc_color = TOK_COLOR_WHITE;
-
 
   flag = 1;
   act_best_sol_cost = -1;
@@ -159,25 +161,42 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank) {
 
 void serve_pendant_request(Stack s, int* proc_color) {
 
+  MPI_Status status;
   int flag;
   int work_amount;
+  int dim_buffer;
 
   MPI_Probe(MPI_ANY_SOURCE,
             REQUEST_WORK,
             MPI_COMM_WORLD,
             &flag,
-            MPI_STATUS_IGNORE);
+            &status);
 
   while ( flag ) {
-    MPI_Rcv();
+    requester_rank = status.MPI_SOURCE;
+    MPI_Recv(, 0, MPI_INT, requester_rank, REQUEST_WORK,
+             MPI_COMM_WORLD, &status);
     work_amount = dimension_stack(s);
     if ( work_amount >= 3 ) {
       work_to_send = split_stack(s);
-      MPI_Send(Request_acccepted...);
+      serialize_stack(s,n, &buffer, &dim_buffer);
+      MPI_Send( &buffer, dim_buffer, MPI_BYTE, requester_rank,
+                REQUEST_ACCEPTED, MPI_COMM_WORLD);
+      if ( requester_rank < my_rank ) {
+        *proc_color = TOK_COLOR_BLACK;
+      }
     } else {
-      MPI_
+      MPI_Send( NULL, 0, MPI_BYTE, requester_rank,
+                REQUEST_REJECTED, MPI_COMM_WORLD);
     }
+    MPI_Probe(MPI_ANY_SOURCE,
+              REQUEST_WORK,
+              MPI_COMM_WORLD,
+              &flag,
+              &status);
   }
+
+  return;
 
 }
 
@@ -196,7 +215,6 @@ void broadcast_act_best_sol_cost(int my_rank, int p, int act_best_sol_cost) {
   return;
 
 }
- 
 
 
 
@@ -312,7 +330,7 @@ int check_termination(){
 
   int flag, value;
 
-  MPI_Probe(pb->rank - 1,
+  MPI_Probe(my_rank - 1,
             TERMINATION,
             MPI_COMM_WORLD,
             &flag,
@@ -322,21 +340,21 @@ int check_termination(){
     MPI_Recv( &value,
               1,
               MPI_INT,
-              pb->rank - 1,
+              my_rank - 1,
               TERMINATION,
               MPI_COMM_WORLD,
               MPI_STATUS_IGNORE);
     if( value == TOK_COLOR_GREEN ) {
       return 1;
     } else {
-      if ( pb->col == TOK_COLOR_WHITE ) {
-        if ( pb->rank == ROOT_RANK ) {
+      if ( proc_color == TOK_COLOR_WHITE ) {
+        if ( my_rank == ROOT_RANK ) {
           value = TOK_COLOR_GREEN;
         }
         MPI_Isend(&value,
                   1,
                   MPI_INT,
-                  pb->rank + 1,
+                  my_rank + 1,
                   TERMINATION,
                   MPI_COMM_WORLD,
                   NULL);
@@ -345,11 +363,11 @@ int check_termination(){
         MPI_Isend(&value,
                   1,
                   MPI_INT,
-                  pb->rank + 1,
+                  my_rank + 1,
                   TERMINATION,
                   MPI_COMM_WORLD,
                   NULL);
-        pb->col = TOK_COLOR_WHITE;
+        *proc_col = TOK_COLOR_WHITE;
       }
     }
   }
