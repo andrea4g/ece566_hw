@@ -34,7 +34,16 @@
 /*----------------------------------------------------------------------------*/
 /*-------------------------------FUNCTION PROTOTYPES--------------------------*/
 /*----------------------------------------------------------------------------*/
-
+int** read_matrix_from_file(char* filename,int* n);
+int tsp_best_solution(Graph g, Stack s, int p, int my_rank);
+void verify_request(Stack s, int n);
+void send_request_work(int my_rank, int p);
+void rcv_pbsc(int* act_best_sol_cost_ptr);
+void serve_pendant_request(Stack s, int* proc_color);
+int terminate(int* act_best_sol_cost_ptr, Stack s);
+int check_termination(int p, int my_rank, int* proc_color_ptr);
+int work(Graph g, Stack s, int act_best_sol_cost, Path* best_tour_ptr);
+void broadcast_act_best_sol_cost(int my_rank, int p, int act_best_sol_cost);
 /*----------------------------------------------------------------------------*/
 /*------------------------------------MAIN------------------------------------*/
 /*----------------------------------------------------------------------------*/
@@ -43,13 +52,14 @@ int main(int argc, char** argv) {
 
   // variable declaration
   int my_rank;
-  int p;
+  int procs_number;
   int i,j,iteration;
   double time_vector[N_ITERATIONS],deviation;
   double average_time, final_time, initial_time;
   int n;
   int** adj_matrix;
   int* buffer;
+  int est_tour_cost;
   Stack s;
   Graph g;
   Path p;
@@ -57,7 +67,7 @@ int main(int argc, char** argv) {
   // Initialize MPI environment
   MPI_Init(&argc, &argv);
   // save the number of processors
-  MPI_Comm_size(MPI_COMM_WORLD, &p);
+  MPI_Comm_size(MPI_COMM_WORLD, &procs_number);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
 
@@ -105,11 +115,11 @@ int main(int argc, char** argv) {
       add_node(p, HOMETOWN);
       push(s,p);
     }
-    tsp
+    tsp_best_solution(g,s,procs_number,my_rank);
   }
   average_time = average_time/N_ITERATIONS;
 
-  if ( my_rank == root_rank ) {
+  if ( my_rank == ROOT_RANK ) {
 
     deviation = 0;
     for ( i = 0; i < N_ITERATIONS; i++ ) {
@@ -133,6 +143,7 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank) {
 
   int new_act_best_sol_cost, act_best_sol_cost;
   int proc_color;
+  int flag;
 
   proc_color = TOK_COLOR_WHITE;
 
@@ -152,22 +163,26 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank) {
     }
   }
 
-  cleanup_messages();
+  //cleanup_messages();
 
   return act_best_sol_cost;
 
 }
 
 
-void serve_pendant_request(Stack s, int* proc_color) {
+void serve_pendant_request(Stack s, int* proc_color, int n, int my_rank) {
 
   MPI_Status status;
   int flag;
   int trash;
   int work_amount;
   int dim_buffer;
+  int requester_rank;
+  Stack work_to_send;
+  char* buffer;
 
-  MPI_Probe(MPI_ANY_SOURCE,
+
+  MPI_Iprobe(MPI_ANY_SOURCE,
             REQUEST_WORK,
             MPI_COMM_WORLD,
             &flag,
@@ -180,7 +195,7 @@ void serve_pendant_request(Stack s, int* proc_color) {
     work_amount = dimension_stack(s);
     if ( work_amount >= 3 ) {
       work_to_send = split_stack(s);
-      serialize_stack(s, n, &buffer, &dim_buffer);
+      buffer = serialize_stack(s, n, &dim_buffer);
       MPI_Send( &buffer, dim_buffer, MPI_BYTE, requester_rank,
                 REQUEST_ACCEPTED, MPI_COMM_WORLD);
       if ( requester_rank < my_rank ) {
