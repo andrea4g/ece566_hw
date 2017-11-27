@@ -14,17 +14,14 @@ struct path {
 
 int finalize_path(Path p) {
 
-  int error;
-  error = 1;
-
   if ( p == NULL ) 
-    return error;
+    return 1;
 
-  error += 2*free(p->nodes);
-  error += 4*free(p->visited);
-  error += 8*free(p);
+  free(p->nodes);
+  free(p->visited);
+  free(p);
 
-  return error;
+  return 0;
 
 }
 
@@ -32,6 +29,7 @@ int finalize_path(Path p) {
 Path init_path(int num_nodes, int est_tour_cost) {
 
   Path p;
+  int i;
 
   p = malloc(sizeof(struct path));
 
@@ -78,7 +76,7 @@ int set_act_tour_cost(Path p, int act_tour_cost) {
 }
 
 
-int add_node(Path p, int node) {
+int add_node_path(Path p, int node) {
 
   if ( p->dim == p->max_dim )
     return 1;
@@ -119,7 +117,7 @@ int extract_last_node(Path p) {
 
 }
 
-int extract_fist_node(Path p) {
+int extract_first_node(Path p) {
 
   return p->dim?p->nodes[0]:-1;
 
@@ -130,9 +128,11 @@ char* serialize_path(Path p) {
 
   char* buffer;
   int index;
+  int n;
 
-  buffer = malloc((4 + 2*(p->nodes))*sizeof(int));
+  buffer = malloc((4 + 2*(p->dim))*sizeof(int));
   index = 0;
+  n = p->max_dim;
 
   memcpy(&buffer[index], &(p->max_dim),       sizeof(int));
   index = index + sizeof(int);
@@ -155,11 +155,13 @@ Path deserialize_path(char* buffer) {
 
   Path p;
   int index;
+  int n;
 
   p = malloc(sizeof(struct path));
-
+  
   index = 0;
   memcpy( &(p->max_dim),&buffer[index],       sizeof(int));
+  n = p->max_dim;
   index = index + sizeof(int);
   memcpy( &(p->est_tour_cost),&buffer[index], sizeof(int));
   index = index + sizeof(int);
@@ -172,6 +174,37 @@ Path deserialize_path(char* buffer) {
   memcpy( p->visited, &buffer[index],         n*sizeof(int));
 
   return p;
+
+
+}
+
+int get_dimension_path(Path p) {
+
+  if ( p == NULL ) {
+    return -1;
+  }
+
+  return p->dim;
+
+}
+
+
+Path copy_path(Path p) {
+
+  Path new_p;
+  int i;
+
+  new_p = init_path(p->max_dim,0); 
+  new_p->est_tour_cost = p->est_tour_cost;
+  new_p->act_tour_cost = p->act_tour_cost;
+  new_p->dim = p->dim;
+
+  for ( i = 0; i < p->dim; i++ ) {
+    new_p->visited[i] = p->visited[i];
+    new_p->nodes[i]   = p->nodes[i];
+  }
+
+  return new_p;
 
 
 }

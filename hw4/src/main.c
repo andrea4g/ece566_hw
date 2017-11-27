@@ -21,10 +21,10 @@
 #define PBSC              4
 
 #define TOK_COLOR_WHITE   0
-#define TOK_COLOR_RED     1
+#define TOK_COLOR_BLACK   1
 #define TOK_COLOR_GREEN   2
 
-
+#define EXP_THR 3
 
 
 /*----------------------------------------------------------------------------*/
@@ -34,15 +34,18 @@
 /*----------------------------------------------------------------------------*/
 /*-------------------------------FUNCTION PROTOTYPES--------------------------*/
 /*----------------------------------------------------------------------------*/
+int cost( Graph g, Path p,int cost_edge, int current_node, 
+          int act_best_sol_cost, int* new_act_cost, int* new_est_cost);
 int** read_matrix_from_file(char* filename,int* n);
-int tsp_best_solution(Graph g, Stack s, int p, int my_rank);
-void verify_request(Stack s, int n);
+int tsp_best_solution(Graph g, Stack s, int p, int my_rank, int n);
+int verify_request(Stack s, int n);
 void send_request_work(int my_rank, int p);
 void rcv_pbsc(int* act_best_sol_cost_ptr);
-void serve_pendant_request(Stack s, int* proc_color);
-int terminate(int* act_best_sol_cost_ptr, Stack s);
+void serve_pendant_requests(Stack s, int* proc_color, int n, int my_rank);
+int terminate(int n,int p, int my_rank, int* proc_color_ptr,
+              int* act_best_sol_cost_ptr, Stack s);
 int check_termination(int p, int my_rank, int* proc_color_ptr);
-int work(Graph g, Stack s, int act_best_sol_cost, Path* best_tour_ptr);
+int work(Graph g,int n, Stack s, int act_best_sol_cost, Path* best_tour_ptr);
 void broadcast_act_best_sol_cost(int my_rank, int p, int act_best_sol_cost);
 /*----------------------------------------------------------------------------*/
 /*------------------------------------MAIN------------------------------------*/
@@ -112,10 +115,10 @@ int main(int argc, char** argv) {
         est_tour_cost += (min_edge(g,i) + sec_min_edge(g,i))/2;
       }
       p = init_path(n,est_tour_cost);
-      add_node(p, HOMETOWN);
+      add_node_path(p, HOMETOWN);
       push(s,p);
     }
-    tsp_best_solution(g,s,procs_number,my_rank);
+    tsp_best_solution(g,s,procs_number,my_rank,n);
   }
   average_time = average_time/N_ITERATIONS;
 
@@ -139,11 +142,12 @@ int main(int argc, char** argv) {
 /*----------------------------------------------------------------------------*/
 /*-------------------------------FUNCTIONS------------------------------------*/
 /*----------------------------------------------------------------------------*/
-int tsp_best_solution(Graph g, Stack s, int p, int my_rank) {
+int tsp_best_solution(Graph g, Stack s, int p, int my_rank, int n) {
 
   int new_act_best_sol_cost, act_best_sol_cost;
   int proc_color;
   int flag;
+  Path best_tour;
 
   proc_color = TOK_COLOR_WHITE;
 
@@ -152,14 +156,14 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank) {
 
   while( flag ) {
     if ( stack_empty(s) ) {
-      flag = !terminate();
+      flag = !terminate(n,p,my_rank,&proc_color,&act_best_sol_cost,s);
     } else {
-      new_act_best_sol_cost = work();
+      new_act_best_sol_cost = work(g,n,s,act_best_sol_cost,&best_tour);
       if ( new_act_best_sol_cost != act_best_sol_cost ) {
         act_best_sol_cost = new_act_best_sol_cost;
         broadcast_act_best_sol_cost(my_rank,p,act_best_sol_cost);
       }
-      serve_pendant_requests();
+      serve_pendant_requests(s, &proc_color, n, my_rank);
     }
   }
 
@@ -170,7 +174,7 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank) {
 }
 
 
-void serve_pendant_request(Stack s, int* proc_color, int n, int my_rank) {
+void serve_pendant_requests(Stack s, int* proc_color, int n, int my_rank) {
 
   MPI_Status status;
   int flag;
@@ -205,7 +209,7 @@ void serve_pendant_request(Stack s, int* proc_color, int n, int my_rank) {
       MPI_Send(&trash, 0, MPI_BYTE, requester_rank,
                 REQUEST_REJECTED, MPI_COMM_WORLD);
     }
-    MPI_Probe(MPI_ANY_SOURCE,
+    MPI_Iprobe(MPI_ANY_SOURCE,
               REQUEST_WORK,
               MPI_COMM_WORLD,
               &flag,
@@ -220,11 +224,12 @@ void serve_pendant_request(Stack s, int* proc_color, int n, int my_rank) {
 void broadcast_act_best_sol_cost(int my_rank, int p, int act_best_sol_cost) {
 
   int i;
-  int my_rank;
+  MPI_Request req;
 
   for ( i = 0; i < p; i++ ) {
     if ( i != my_rank ) {
-      MPI_ISend(&act_best_sol_cost, 1, MPI_INT, i, PBSC, MPI_COMM_WORLD);
+      MPI_Isend(&act_best_sol_cost, 1, MPI_INT, i, 
+      PBSC, MPI_COMM_WORLD, &req);
     }
   }
 
@@ -238,6 +243,7 @@ int** read_matrix_from_file(char* filename,int* n) {
   FILE* fid;
   int num_nodes;
   int** mat;
+  int i,j;
 
   fid = fopen(filename,"r");
 
@@ -246,7 +252,7 @@ int** read_matrix_from_file(char* filename,int* n) {
   for ( i = 0; i < num_nodes; i++ ) {
     mat[i] = malloc(num_nodes*sizeof(int));
     for ( j = 0; j < num_nodes; j++ ) {
-      fscanf(fid,"%d",&matrix[i][j]);
+      fscanf(fid,"%d", &mat[i][j]);
     }
   }
 
@@ -255,15 +261,17 @@ int** read_matrix_from_file(char* filename,int* n) {
 }
 
 
-int work(Graph g, Stack s, int act_best_sol_cost, Path* best_tour_ptr) {
+int work(Graph g,int n,Stack s, int act_best_sol_cost, Path* best_tour_ptr) {
 
-  Path p;
+  Path p, new_p;
   int new_act_cost, new_est_cost;
-  int first_node;
+  int current_node,first_node;
+  int i, count;
+  int edge_cost;
 
   count = 0;
-  while ( !empty_stack(s) && count < EXP_THR ) {
-    p = pop(s);
+  while ( !stack_empty(s) && count < EXP_THR ) {
+    pop(s,&p);
     current_node = extract_last_node(p);
     if ( get_dimension_path(p) == n ) {
       first_node = extract_first_node(p);
@@ -319,12 +327,12 @@ int cost(
 
   act_cost = act_cost + cost_edge;
 
-  if ( get_dim_path(p) == 1 ) {
+  if ( get_dimension_path(p) == 1 ) {
     est_cost =
-      est_cost - (min_edge(G,last_node) + min_edge(G,current_node))/2;
+      est_cost - (min_edge(g,last_node) + min_edge(g,current_node))/2;
   } else {
     est_cost =
-      est_cost - (sec_min_edge(G,last_node) + min_edge(G,current_node))/2;
+      est_cost - (sec_min_edge(g,last_node) + min_edge(g,current_node))/2;
   }
 
   total_cost = est_cost + act_cost;
@@ -349,7 +357,7 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
   proc_color = *proc_color_ptr;
 
 
-  MPI_Probe(rank_src,
+  MPI_Iprobe(rank_src,
             TERMINATION,
             MPI_COMM_WORLD,
             &flag,
@@ -386,7 +394,7 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
                   TERMINATION,
                   MPI_COMM_WORLD,
                   NULL);
-        *proc_col_ptr = TOK_COLOR_WHITE;
+        *proc_color_ptr = TOK_COLOR_WHITE;
       }
     }
   }
@@ -395,20 +403,21 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
 }
 
 
-int terminate(int* act_best_sol_cost_ptr, Stack s) {
+int terminate(int n, int p, int my_rank, int* proc_color_ptr,
+              int* act_best_sol_cost_ptr, Stack s) {
 
   int request_on_fly = 0;
+  int response;
 
   while ( 1 ) {
-    flag = check_termination();
-    if ( flag )
+    if ( check_termination(p,my_rank,proc_color_ptr) )
       return 1;
     rcv_pbsc(act_best_sol_cost_ptr);
     if ( !request_on_fly ) {
-      send_request_work();
+      send_request_work(my_rank,p);
       request_on_fly = 1;
     } else {
-      response = verify_request(s); // Returns a value < 0 in case until now
+      response = verify_request(s,n); // Returns a value < 0 in case until now
                                     // no response received.
       if ( response >= 0   ) {  // Request Rejected or Accepted
         request_on_fly = 0;
@@ -431,7 +440,7 @@ void rcv_pbsc(int* act_best_sol_cost_ptr) {
 
   act_best_sol_cost = *act_best_sol_cost_ptr;
 
-  MPI_Probe(MPI_ANY_SOURCE,
+  MPI_Iprobe(MPI_ANY_SOURCE,
             PBSC,
             MPI_COMM_WORLD,
             &flag,
@@ -443,7 +452,7 @@ void rcv_pbsc(int* act_best_sol_cost_ptr) {
     if ( poss_best_sol_cost < act_best_sol_cost ) {
       act_best_sol_cost = poss_best_sol_cost;
     }
-    MPI_Probe(MPI_ANY_SOURCE,
+    MPI_Iprobe(MPI_ANY_SOURCE,
               PBSC,
               MPI_COMM_WORLD,
               &flag,
@@ -476,15 +485,16 @@ void send_request_work(int my_rank, int p) {
  *  = 0 in case accepted
  *  > 0 in case rejected
 */
-void verify_request(Stack s, int n){
+int verify_request(Stack s, int n){
 
   int trash;
   int flag;
   char* buffer;
   int count;
   MPI_Status status;
+  Stack new_s;
 
-  MPI_Probe(MPI_ANY_SOURCE,
+  MPI_Iprobe(MPI_ANY_SOURCE,
             REQUEST_REJECTED,
             MPI_COMM_WORLD,
             &flag,
@@ -496,7 +506,7 @@ void verify_request(Stack s, int n){
     return 1;
   }
 
-  MPI_Probe(MPI_ANY_SOURCE,
+  MPI_Iprobe(MPI_ANY_SOURCE,
             REQUEST_ACCEPTED,
             MPI_COMM_WORLD,
             &flag,
@@ -507,7 +517,7 @@ void verify_request(Stack s, int n){
     buffer = malloc(count*sizeof(char));
     MPI_Recv(buffer, count, MPI_BYTE, status.MPI_SOURCE, REQUEST_ACCEPTED,
              MPI_COMM_WORLD, &status);
-    new s = deserialize_stack(buffer, n);
+    new_s = deserialize_stack(buffer, n);
     insert_stack(new_s,s);
     free(buffer);
     return 1;
@@ -523,7 +533,7 @@ void cleanup_messages(){
   int flag;
   MPI_Status status;
 
-  MPI_Probe(MPI_ANY_SOURCE,
+  MPI_Iprobe(MPI_ANY_SOURCE,
             MPI_ANY_TAG,
             MPI_COMM_WORLD,
             &flag,
@@ -536,7 +546,7 @@ void cleanup_messages(){
     if ( poss_best_sol_cost < act_best_sol_cost ) {
       act_best_sol_cost = poss_best_sol_cost;
     }
-    MPI_Probe(MPI_ANY_SOURCE,
+    MPI_Iprobe(MPI_ANY_SOURCE,
               PBSC,
               MPI_COMM_WORLD,
               &flag,

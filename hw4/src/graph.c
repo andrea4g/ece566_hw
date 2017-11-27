@@ -34,7 +34,8 @@ int finalize_graph(Graph g) {
 Graph init_graph(int num_nodes, int** adj_matrix) {
 
   Graph g;
-  int i,min;
+  int i,j;
+  int sec_min,min;
 
   g = malloc(sizeof(struct graph));
 
