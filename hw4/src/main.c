@@ -441,27 +441,93 @@ void rcv_pbsc(int* act_best_sol_cost_ptr) {
 }
 
 
-void send_request_work() {
+void send_request_work(int my_rank, int p) {
 
+  int dest_rank;
 
-        MPI_Isend(&value,
-                  1,
-                  MPI_INT,
-                  rank_dst,
-                  TERMINATION,
-                  MPI_COMM_WORLD,
-                  NULL);
+  srand(time(NULL));
+  dest_rank = (my_rank + (rand() % (p-1)) + 1) % p;
+
+  MPI_Isend(&dest_rank,
+            1,
+            MPI_INT,
+            dest_rank,
+            REQUEST_WORK,
+            MPI_COMM_WORLD,
+            NULL);
 
 }
+/*  < 0 in case no request
+ *  = 0 in case accepted
+ *  > 0 in case rejected
+*/
+void verify_request(Stack s, int n){
 
-void verify_request(){
-/*TODO*/
+  int trash;
+  int flag;
+  char* buffer;
+  int count;
+  MPI_Status status;
+
+  MPI_Probe(MPI_ANY_SOURCE,
+            REQUEST_REJECTED,
+            MPI_COMM_WORLD,
+            &flag,
+            &status);
+
+  if ( flag ) {
+    MPI_Recv(&trash, 1, MPI_INT, status.MPI_SOURCE, REQUEST_REJECTED,
+             MPI_COMM_WORLD, &status);
+    return 1;
+  }
+
+  MPI_Probe(MPI_ANY_SOURCE,
+            REQUEST_ACCEPTED,
+            MPI_COMM_WORLD,
+            &flag,
+            &status);
+
+  if ( flag ) {
+    MPI_Get_count(&status, MPI_BYTE, &count );
+    buffer = malloc(count*sizeof(char));
+    MPI_Recv(buffer, count, MPI_BYTE, status.MPI_SOURCE, REQUEST_ACCEPTED,
+             MPI_COMM_WORLD, &status);
+    new s = deserialize_stack(buffer, n);
+    insert_stack(new_s,s);
+    free(buffer);
+    return 1;
+  }
+
+
+  return -1;
 
 }
-
+/*
 void cleanup_messages(){
-/*TODO*/
-}
+ 
+  int flag;
+  MPI_Status status;
+
+  MPI_Probe(MPI_ANY_SOURCE,
+            MPI_ANY_TAG,
+            MPI_COMM_WORLD,
+            &flag,
+            &status);
+
+  while ( flag ) {
+
+    MPI_Recv(&poss_best_sol_cost, 1, MPI_INT, MPI_ANY, PBSC,
+             MPI_COMM_WORLD, &status);
+    if ( poss_best_sol_cost < act_best_sol_cost ) {
+      act_best_sol_cost = poss_best_sol_cost;
+    }
+    MPI_Probe(MPI_ANY_SOURCE,
+              PBSC,
+              MPI_COMM_WORLD,
+              &flag,
+              &status);
+  }
+}*/
 
 
 
