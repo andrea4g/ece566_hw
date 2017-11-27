@@ -141,7 +141,7 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank) {
 
   while( flag ) {
     if ( stack_empty(s) ) {
-      flag = !check_termination();
+      flag = !terminate();
     } else {
       new_act_best_sol_cost = work();
       if ( new_act_best_sol_cost != act_best_sol_cost ) {
@@ -163,6 +163,7 @@ void serve_pendant_request(Stack s, int* proc_color) {
 
   MPI_Status status;
   int flag;
+  int trash;
   int work_amount;
   int dim_buffer;
 
@@ -174,19 +175,19 @@ void serve_pendant_request(Stack s, int* proc_color) {
 
   while ( flag ) {
     requester_rank = status.MPI_SOURCE;
-    MPI_Recv(, 0, MPI_INT, requester_rank, REQUEST_WORK,
+    MPI_Recv(&trash, 0, MPI_INT, requester_rank, REQUEST_WORK,
              MPI_COMM_WORLD, &status);
     work_amount = dimension_stack(s);
     if ( work_amount >= 3 ) {
       work_to_send = split_stack(s);
-      serialize_stack(s,n, &buffer, &dim_buffer);
+      serialize_stack(s, n, &buffer, &dim_buffer);
       MPI_Send( &buffer, dim_buffer, MPI_BYTE, requester_rank,
                 REQUEST_ACCEPTED, MPI_COMM_WORLD);
       if ( requester_rank < my_rank ) {
         *proc_color = TOK_COLOR_BLACK;
       }
     } else {
-      MPI_Send( NULL, 0, MPI_BYTE, requester_rank,
+      MPI_Send(&trash, 0, MPI_BYTE, requester_rank,
                 REQUEST_REJECTED, MPI_COMM_WORLD);
     }
     MPI_Probe(MPI_ANY_SOURCE,
@@ -208,15 +209,13 @@ void broadcast_act_best_sol_cost(int my_rank, int p, int act_best_sol_cost) {
 
   for ( i = 0; i < p; i++ ) {
     if ( i != my_rank ) {
-      MPI_ISend(&act_best_sol_cost, 1, MPI_INT, i, PBS, MPI_COMM_WORLD);
+      MPI_ISend(&act_best_sol_cost, 1, MPI_INT, i, PBSC, MPI_COMM_WORLD);
     }
   }
 
   return;
 
 }
-
-
 
 
 int** read_matrix_from_file(char* filename,int* n) {
@@ -241,10 +240,7 @@ int** read_matrix_from_file(char* filename,int* n) {
 }
 
 
-
-
-
-int work(Graph g, Stack s, int act_best_sol_cost, Path* best_tour) {
+int work(Graph g, Stack s, int act_best_sol_cost, Path* best_tour_ptr) {
 
   Path p;
   int new_act_cost, new_est_cost;
@@ -253,17 +249,19 @@ int work(Graph g, Stack s, int act_best_sol_cost, Path* best_tour) {
   count = 0;
   while ( !empty_stack(s) && count < EXP_THR ) {
     p = pop(s);
+    current_node = extract_last_node(p);
     if ( get_dimension_path(p) == n ) {
       first_node = extract_first_node(p);
       edge_cost = get_edge_cost(g,current_node,first_node);
-      new_act_cost = get_act_tour_cost(p) + edge_cost;
-      if ( new_act_cost < act_best_sol_cost ) {
-        finalize_path(*best_tour);
-        *best_tour = p;
-        act_best_sol_cost = new_act_cost;
+      if ( edge_cost != -1 ) {
+        new_act_cost = get_act_tour_cost(p) + edge_cost;
+        if ( new_act_cost < act_best_sol_cost ) {
+          finalize_path(*best_tour_ptr);
+          *best_tour_ptr = p;
+          act_best_sol_cost = new_act_cost;
+        }
       }
     } else {
-      current_node = extract_last_node(p);
       for ( i = 0; i < n; i++ ) {
         edge_cost = get_edge_cost(g,current_node,i);
         if ( ( edge_cost > -1 ) &&
@@ -326,11 +324,17 @@ int cost(
   return 1;
 }
 
-int check_termination(){
+int check_termination(int p, int my_rank, int* proc_color_ptr){
 
   int flag, value;
+  int proc_color;
 
-  MPI_Probe(my_rank - 1,
+  int rank_src = (my_rank - 1) % p;
+  int rank_dst = (my_rank + 1) % p;
+  proc_color = *proc_color_ptr;
+
+
+  MPI_Probe(rank_src,
             TERMINATION,
             MPI_COMM_WORLD,
             &flag,
@@ -340,7 +344,7 @@ int check_termination(){
     MPI_Recv( &value,
               1,
               MPI_INT,
-              my_rank - 1,
+              rank_src,
               TERMINATION,
               MPI_COMM_WORLD,
               MPI_STATUS_IGNORE);
@@ -354,7 +358,7 @@ int check_termination(){
         MPI_Isend(&value,
                   1,
                   MPI_INT,
-                  my_rank + 1,
+                  rank_dst,
                   TERMINATION,
                   MPI_COMM_WORLD,
                   NULL);
@@ -363,11 +367,11 @@ int check_termination(){
         MPI_Isend(&value,
                   1,
                   MPI_INT,
-                  my_rank + 1,
+                  rank_dst,
                   TERMINATION,
                   MPI_COMM_WORLD,
                   NULL);
-        *proc_col = TOK_COLOR_WHITE;
+        *proc_col_ptr = TOK_COLOR_WHITE;
       }
     }
   }
@@ -376,7 +380,7 @@ int check_termination(){
 }
 
 
-int terminate() {
+int terminate(int* act_best_sol_cost_ptr, Stack s) {
 
   int request_on_fly = 0;
 
@@ -384,17 +388,17 @@ int terminate() {
     flag = check_termination();
     if ( flag )
       return 1;
-    rcv_pbsc();
+    rcv_pbsc(act_best_sol_cost_ptr);
     if ( !request_on_fly ) {
       send_request_work();
       request_on_fly = 1;
     } else {
-      verify_request();
-      if ( response == 1  ) {
-        insert_stack();
-        return 0;
-      } else {
+      response = verify_request(s); // Returns a value < 0 in case until now
+                                    // no response received.
+      if ( response >= 0   ) {  // Request Rejected or Accepted
         request_on_fly = 0;
+        if ( response == 0 )    // Request Accepted
+          return 0;
       }
     }
   }
@@ -403,14 +407,61 @@ int terminate() {
 }
 
 
+void rcv_pbsc(int* act_best_sol_cost_ptr) {
+
+  MPI_Status status;
+  int flag;
+  int poss_best_sol_cost;
+  int act_best_sol_cost;
+
+  act_best_sol_cost = *act_best_sol_cost_ptr;
+
+  MPI_Probe(MPI_ANY_SOURCE,
+            PBSC,
+            MPI_COMM_WORLD,
+            &flag,
+            &status);
+
+  while ( flag ) {
+    MPI_Recv(&poss_best_sol_cost, 1, MPI_INT, status.MPI_SOURCE, PBSC,
+             MPI_COMM_WORLD, &status);
+    if ( poss_best_sol_cost < act_best_sol_cost ) {
+      act_best_sol_cost = poss_best_sol_cost;
+    }
+    MPI_Probe(MPI_ANY_SOURCE,
+              PBSC,
+              MPI_COMM_WORLD,
+              &flag,
+              &status);
+  }
+
+  *act_best_sol_cost_ptr = act_best_sol_cost;
+  return;
+
+}
 
 
+void send_request_work() {
 
 
+        MPI_Isend(&value,
+                  1,
+                  MPI_INT,
+                  rank_dst,
+                  TERMINATION,
+                  MPI_COMM_WORLD,
+                  NULL);
 
+}
 
+void verify_request(){
+/*TODO*/
 
+}
 
+void cleanup_messages(){
+/*TODO*/
+}
 
 
 
