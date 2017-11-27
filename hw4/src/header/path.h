@@ -17,5 +17,7 @@ int extract_fist_node(Path p);
 int visited(Path p, int node);
 void print_path(Path p);
 int get_dimension_path(Path p);
+char* serialize_path(Path p);
+Path deserialize_path(char* buffer);
 Path copy_path(Path p);
 #endif

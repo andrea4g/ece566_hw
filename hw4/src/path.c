@@ -125,3 +125,57 @@ int extract_fist_node(Path p) {
 
 }
 
+
+char* serialize_path(Path p) {
+
+  char* buffer;
+  int index;
+
+  buffer = malloc((4 + 2*(p->nodes))*sizeof(int));
+  index = 0;
+
+  memcpy(&buffer[index], &(p->max_dim),       sizeof(int));
+  index = index + sizeof(int);
+  memcpy(&buffer[index], &(p->est_tour_cost), sizeof(int));
+  index = index + sizeof(int);
+  memcpy(&buffer[index], &(p->act_tour_cost), sizeof(int));
+  index = index + sizeof(int);
+  memcpy(&buffer[index], &(p->dim),           sizeof(int));
+  index = index + sizeof(int);
+  memcpy(&buffer[index], p->nodes,            n*sizeof(int));
+  index = index + n*sizeof(int);
+  memcpy(&buffer[index], p->visited,          n*sizeof(int));
+
+  return buffer;
+}
+
+
+
+Path deserialize_path(char* buffer) {
+
+  Path p;
+  int index;
+
+  p = malloc(sizeof(struct path));
+
+  index = 0;
+  memcpy( &(p->max_dim),&buffer[index],       sizeof(int));
+  index = index + sizeof(int);
+  memcpy( &(p->est_tour_cost),&buffer[index], sizeof(int));
+  index = index + sizeof(int);
+  memcpy( &(p->act_tour_cost),&buffer[index], sizeof(int));
+  index = index + sizeof(int);
+  memcpy( &(p->dim), &buffer[index],          sizeof(int));
+  index = index + sizeof(int);
+  memcpy( p->nodes,&buffer[index],            n*sizeof(int));
+  index = index + n*sizeof(int);
+  memcpy( p->visited, &buffer[index],         n*sizeof(int));
+
+  return p;
+
+
+}
+
+
+
+

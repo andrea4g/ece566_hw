@@ -126,20 +126,25 @@ int main(int argc, char** argv) {
 /*----------------------------------------------------------------------------*/
 /*-------------------------------FUNCTIONS------------------------------------*/
 /*----------------------------------------------------------------------------*/
-int tsp_best_solution() {
+int tsp_best_solution(Graph g, Stack s, int p, int my_rank) {
 
   int new_act_best_sol_cost, act_best_sol_cost;
+  int proc_color;
+
+  proc_color = TOK_COLOR_WHITE;
+
 
   flag = 1;
   act_best_sol_cost = -1;
 
   while( flag ) {
     if ( stack_empty(s) ) {
-      flag = !terminate();
+      flag = !check_termination();
     } else {
       new_act_best_sol_cost = work();
       if ( new_act_best_sol_cost != act_best_sol_cost ) {
-        broadcast();
+        act_best_sol_cost = new_act_best_sol_cost;
+        broadcast_act_best_sol_cost(my_rank,p,act_best_sol_cost);
       }
       serve_pendant_requests();
     }
@@ -150,6 +155,49 @@ int tsp_best_solution() {
   return act_best_sol_cost;
 
 }
+
+
+void serve_pendant_request(Stack s, int* proc_color) {
+
+  int flag;
+  int work_amount;
+
+  MPI_Probe(MPI_ANY_SOURCE,
+            REQUEST_WORK,
+            MPI_COMM_WORLD,
+            &flag,
+            MPI_STATUS_IGNORE);
+
+  while ( flag ) {
+    MPI_Rcv();
+    work_amount = dimension_stack(s);
+    if ( work_amount >= 3 ) {
+      work_to_send = split_stack(s);
+      MPI_Send(Request_acccepted...);
+    } else {
+      MPI_
+    }
+  }
+
+}
+
+
+void broadcast_act_best_sol_cost(int my_rank, int p, int act_best_sol_cost) {
+
+  int i;
+  int my_rank;
+
+  for ( i = 0; i < p; i++ ) {
+    if ( i != my_rank ) {
+      MPI_ISend(&act_best_sol_cost, 1, MPI_INT, i, PBS, MPI_COMM_WORLD);
+    }
+  }
+
+  return;
+
+}
+ 
+
 
 
 
@@ -178,7 +226,7 @@ int** read_matrix_from_file(char* filename,int* n) {
 
 
 
-int Work(Graph g, Stack s, int act_best_sol_cost, Path* best_tour) {
+int work(Graph g, Stack s, int act_best_sol_cost, Path* best_tour) {
 
   Path p;
   int new_act_cost, new_est_cost;

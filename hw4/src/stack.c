@@ -151,6 +151,65 @@ Stack split_stack(Stack org_s) {
 
 }
 
+int dimension_stack(Stack s) {
+
+  return s->count;
+
+}
+
+
+char* serialize_stack(Stack s,int n) {
+
+  int tot_dim;
+  int index;
+  char* buffer;
+  char* buffer_path;
+  link l;
+
+  tot_dim = (1+count*(4+2*n));
+  index = 0;
+
+  buffer = malloc(tot_dim*sizeof(int));
+
+  memcpy(&buffer[index], &s->count, sizeof(int));
+  index = index + sizeof(int);
+
+  l = s->tos; 
+  for ( i = 0; i < s->count; i++ ) {
+    buffer_path = serialize_path(l->p);
+    memcpy(&buffer[index],buffer_path,(4+2*n)*sizeof(int));
+    l = l->next_node;
+  }
+
+  return buffer;
+
+}
+
+Stack deserialize_stack(char* buffer,int n) {
+
+  link l;
+  Stack s;
+  int index;
+
+  s = malloc(sizeof(struct stack));
+ 
+  index = 0;
+  memcpy(&(s->count),&buffer[index],sizeof(int));
+  index = index + sizeof(int);
+  prev_l = NULL;
+  for ( i = 0; i < count; i++ ) {
+    l = malloc(sizeof(struct node));
+    l->p = deserialize_path(&buffer[index]);
+    l->next_node = prev_l;
+    prev_l = l;
+    index = index + (4 + 2*n)*sizeof(int);
+  }
+
+  s->tos = l;
+
+  return s;
+
+}
 
 
 
