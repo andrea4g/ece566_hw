@@ -67,6 +67,9 @@ int main(int argc, char** argv) {
   Graph g;
   Path p;
 
+
+  
+
   // Initialize MPI environment
   MPI_Init(&argc, &argv);
   // save the number of processors
@@ -147,15 +150,33 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank, int n) {
   int new_act_best_sol_cost, act_best_sol_cost;
   int proc_color;
   int flag;
+  int first_time, first_color, first_rank_dst;
   Path best_tour;
+  MPI_Request req;
 
-  proc_color = TOK_COLOR_WHITE;
+  best_tour = NULL;
+  first_time = 1;
+  
+  
+  proc_color  = TOK_COLOR_WHITE;
+  first_color = TOK_COLOR_WHITE; 
+  first_rank_dst = (ROOT_RANK + 1) % p;
 
   flag = 1;
   act_best_sol_cost = -1;
 
   while( flag ) {
     if ( stack_empty(s) ) {
+      if ( my_rank == ROOT_RANK && first_time == 1 ) { 
+        MPI_Isend(&first_color,
+                  1,
+                  MPI_INT,
+                  first_rank_dst,
+                  TERMINATION,
+                  MPI_COMM_WORLD,
+                  &req);
+        first_time = 0;
+      }
       flag = !terminate(n,p,my_rank,&proc_color,&act_best_sol_cost,s);
     } else {
       new_act_best_sol_cost = work(g,n,s,act_best_sol_cost,&best_tour);
@@ -256,6 +277,7 @@ int** read_matrix_from_file(char* filename,int* n) {
     }
   }
 
+  *n = num_nodes;
   return mat;
 
 }
@@ -278,9 +300,10 @@ int work(Graph g,int n,Stack s, int act_best_sol_cost, Path* best_tour_ptr) {
       edge_cost = get_edge_cost(g,current_node,first_node);
       if ( edge_cost != -1 ) {
         new_act_cost = get_act_tour_cost(p) + edge_cost;
-        if ( new_act_cost < act_best_sol_cost ) {
+        if (  act_best_sol_cost == -1 || 
+              new_act_cost < act_best_sol_cost ) {
           finalize_path(*best_tour_ptr);
-          *best_tour_ptr = p;
+          *best_tour_ptr = copy_path(p);
           act_best_sol_cost = new_act_cost;
         }
       }
@@ -351,6 +374,7 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
 
   int flag, value;
   int proc_color;
+  MPI_Request req;
 
   int rank_src = (my_rank - 1) % p;
   int rank_dst = (my_rank + 1) % p;
@@ -384,7 +408,7 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
                   rank_dst,
                   TERMINATION,
                   MPI_COMM_WORLD,
-                  NULL);
+                  &req);
       } else {
         value = TOK_COLOR_BLACK;
         MPI_Isend(&value,
@@ -468,6 +492,7 @@ void rcv_pbsc(int* act_best_sol_cost_ptr) {
 void send_request_work(int my_rank, int p) {
 
   int dest_rank;
+  MPI_Request req;
 
   srand(time(NULL));
   dest_rank = (my_rank + (rand() % (p-1)) + 1) % p;
@@ -478,7 +503,7 @@ void send_request_work(int my_rank, int p) {
             dest_rank,
             REQUEST_WORK,
             MPI_COMM_WORLD,
-            NULL);
+            &req);
 
 }
 /*  < 0 in case no request

@@ -200,9 +200,12 @@ Path copy_path(Path p) {
   new_p->dim = p->dim;
 
   for ( i = 0; i < p->dim; i++ ) {
-    new_p->visited[i] = p->visited[i];
     new_p->nodes[i]   = p->nodes[i];
   }
+  for ( i = 0; i < p->max_dim; i++ ) {
+    new_p->visited[i] = p->visited[i];
+  }
+
 
   return new_p;
 

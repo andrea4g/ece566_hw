@@ -36,6 +36,7 @@ Graph init_graph(int num_nodes, int** adj_matrix) {
   Graph g;
   int i,j;
   int sec_min,min;
+  int act_edge;
 
   g = malloc(sizeof(struct graph));
 
@@ -52,9 +53,10 @@ Graph init_graph(int num_nodes, int** adj_matrix) {
   }
 
   for ( i = 0; i < num_nodes; i++ ) {
-    min = adj_matrix[i][0];
+    min = -1;
     for (j = 0; j < num_nodes; j++ ) {
-      if ( adj_matrix[i][j] < min )
+      act_edge = adj_matrix[i][j];
+      if ( min == -1 || (act_edge != -1 && act_edge < min ) )
         min = adj_matrix[i][j];
     }
     g->min_edge[i] = min;
