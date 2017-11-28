@@ -166,23 +166,25 @@ char* serialize_stack(Stack s,int n, int* dim_buffer_ptr) {
   char* buffer;
   char* buffer_path;
   link l;
+  int prova;
 
   tot_dim = (1 + (s->count)*(4+2*n));
   index = 0;
-
   buffer = malloc(tot_dim*sizeof(int));
 
-  memcpy(&buffer[index], &s->count, sizeof(int));
+  
+  memcpy(&buffer[index], &(s->count), sizeof(int));
+  memcpy(&prova,&buffer[index],sizeof(int));
   index = index + sizeof(int);
-
   l = s->tos; 
   for ( i = 0; i < s->count; i++ ) {
     buffer_path = serialize_path(l->p);
     memcpy(&buffer[index],buffer_path,(4+2*n)*sizeof(int));
     l = l->next_node;
+    index = index + (4+2*n)*sizeof(int);
   }
 
-  *dim_buffer_ptr = tot_dim;
+  *dim_buffer_ptr = tot_dim*sizeof(int);
   return buffer;
 
 }
@@ -191,7 +193,8 @@ Stack deserialize_stack(char* buffer,int n) {
 
   link l,prev_l;
   Stack s;
- 
+  link* ll;
+
   int index;
   int i;
 
@@ -201,16 +204,19 @@ Stack deserialize_stack(char* buffer,int n) {
   memcpy(&(s->count),&buffer[index],sizeof(int));
   index = index + sizeof(int);
   prev_l = NULL;
+
+  ll = &(s->tos);
   for ( i = 0; i < s->count; i++ ) {
     l = malloc(sizeof(struct node));
+    *ll = l;
+    ll = &(l->next_node);
+    
     l->p = deserialize_path(&buffer[index]);
+
     l->next_node = prev_l;
-    prev_l = l;
     index = index + (4 + 2*n)*sizeof(int);
   }
-
-  s->tos = l;
-
+  
   return s;
 
 }

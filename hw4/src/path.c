@@ -162,6 +162,8 @@ Path deserialize_path(char* buffer) {
   index = 0;
   memcpy( &(p->max_dim),&buffer[index],       sizeof(int));
   n = p->max_dim;
+  p->nodes    = malloc(n*sizeof(int));
+  p->visited  = malloc(n*sizeof(int));
   index = index + sizeof(int);
   memcpy( &(p->est_tour_cost),&buffer[index], sizeof(int));
   index = index + sizeof(int);
@@ -195,6 +197,7 @@ Path copy_path(Path p) {
   int i;
 
   new_p = init_path(p->max_dim,0); 
+  
   new_p->est_tour_cost = p->est_tour_cost;
   new_p->act_tour_cost = p->act_tour_cost;
   new_p->dim = p->dim;

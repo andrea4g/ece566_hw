@@ -121,7 +121,8 @@ int main(int argc, char** argv) {
       add_node_path(p, HOMETOWN);
       push(s,p);
     }
-    tsp_best_solution(g,s,procs_number,my_rank,n);
+    printf("%d %d\n",my_rank,tsp_best_solution(g,s,procs_number,my_rank,n));
+    printf("Non credo\n");
   }
   average_time = average_time/N_ITERATIONS;
 
@@ -168,6 +169,7 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank, int n) {
   while( flag ) {
     if ( stack_empty(s) ) {
       if ( my_rank == ROOT_RANK && first_time == 1 ) { 
+        printf("Sending first token %d of %d to %d\n",my_rank,p,first_rank_dst);
         MPI_Isend(&first_color,
                   1,
                   MPI_INT,
@@ -179,11 +181,13 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank, int n) {
       }
       flag = !terminate(n,p,my_rank,&proc_color,&act_best_sol_cost,s);
     } else {
+      printf("here %d\n", my_rank);
       new_act_best_sol_cost = work(g,n,s,act_best_sol_cost,&best_tour);
       if ( new_act_best_sol_cost != act_best_sol_cost ) {
         act_best_sol_cost = new_act_best_sol_cost;
         broadcast_act_best_sol_cost(my_rank,p,act_best_sol_cost);
       }
+      printf("%d: HERE %d\n",my_rank,act_best_sol_cost);
       serve_pendant_requests(s, &proc_color, n, my_rank);
     }
   }
@@ -215,18 +219,21 @@ void serve_pendant_requests(Stack s, int* proc_color, int n, int my_rank) {
 
   while ( flag ) {
     requester_rank = status.MPI_SOURCE;
-    MPI_Recv(&trash, 0, MPI_INT, requester_rank, REQUEST_WORK,
+    printf("Rec Reqeust_work %d from %d\n", my_rank, status.MPI_SOURCE);
+    MPI_Recv(&trash, 1, MPI_INT, requester_rank, REQUEST_WORK,
              MPI_COMM_WORLD, &status);
     work_amount = dimension_stack(s);
     if ( work_amount >= 3 ) {
       work_to_send = split_stack(s);
-      buffer = serialize_stack(s, n, &dim_buffer);
-      MPI_Send( &buffer, dim_buffer, MPI_BYTE, requester_rank,
+      buffer = serialize_stack(work_to_send, n, &dim_buffer);
+      printf("Sending stack %d to %d\n", my_rank, requester_rank);
+      MPI_Send( buffer, dim_buffer, MPI_BYTE, requester_rank,
                 REQUEST_ACCEPTED, MPI_COMM_WORLD);
       if ( requester_rank < my_rank ) {
         *proc_color = TOK_COLOR_BLACK;
       }
     } else {
+      printf("Sending REJECT %d to %d\n", my_rank, requester_rank);
       MPI_Send(&trash, 0, MPI_BYTE, requester_rank,
                 REQUEST_REJECTED, MPI_COMM_WORLD);
     }
@@ -245,10 +252,12 @@ void serve_pendant_requests(Stack s, int* proc_color, int n, int my_rank) {
 void broadcast_act_best_sol_cost(int my_rank, int p, int act_best_sol_cost) {
 
   int i;
+  
   MPI_Request req;
 
   for ( i = 0; i < p; i++ ) {
     if ( i != my_rank ) {
+      printf("ISending bsc %d to %d\n", my_rank, i);
       MPI_Isend(&act_best_sol_cost, 1, MPI_INT, i, 
       PBSC, MPI_COMM_WORLD, &req);
     }
@@ -303,7 +312,7 @@ int work(Graph g,int n,Stack s, int act_best_sol_cost, Path* best_tour_ptr) {
         if (  act_best_sol_cost == -1 || 
               new_act_cost < act_best_sol_cost ) {
           finalize_path(*best_tour_ptr);
-          *best_tour_ptr = copy_path(p);
+          //*best_tour_ptr = copy_path(p);
           act_best_sol_cost = new_act_cost;
         }
       }
@@ -375,10 +384,13 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
   int flag, value;
   int proc_color;
   MPI_Request req;
-
-  int rank_src = (my_rank - 1) % p;
+  int mailbox;
+  int i;
+  
+  int rank_src = my_rank>0?((my_rank - 1) % p):(p-1);
   int rank_dst = (my_rank + 1) % p;
   proc_color = *proc_color_ptr;
+
 
 
   MPI_Iprobe(rank_src,
@@ -386,41 +398,64 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
             MPI_COMM_WORLD,
             &flag,
             MPI_STATUS_IGNORE);
+  //printf("%d: %d\n",my_rank,rank_src);
 
   if ( flag ) {
-    MPI_Recv( &value,
+    printf("P: %d, RS: %d\n", p,rank_src);
+    MPI_Recv( &mailbox,
               1,
               MPI_INT,
               rank_src,
               TERMINATION,
               MPI_COMM_WORLD,
               MPI_STATUS_IGNORE);
-    if( value == TOK_COLOR_GREEN ) {
+    printf("Rec termination %d from %d. I am %d\n", mailbox,rank_src, my_rank);
+    if( mailbox == TOK_COLOR_GREEN ) {
+       value = TOK_COLOR_GREEN;
+       MPI_Send( &value,
+                  1,
+                  MPI_INT,
+                  rank_dst,
+                  TERMINATION,
+                  MPI_COMM_WORLD);   
       return 1;
-    } else {
-      if ( proc_color == TOK_COLOR_WHITE ) {
-        if ( my_rank == ROOT_RANK ) {
-          value = TOK_COLOR_GREEN;
-        }
-        MPI_Isend(&value,
+    }  
+    if ( proc_color == TOK_COLOR_WHITE) {
+      if ( mailbox == TOK_COLOR_WHITE && my_rank == ROOT_RANK ) {
+        value = TOK_COLOR_GREEN;
+        MPI_Send( &value,
                   1,
                   MPI_INT,
                   rank_dst,
                   TERMINATION,
-                  MPI_COMM_WORLD,
-                  &req);
+                  MPI_COMM_WORLD);
+         
+        return 1;
+      } else if ( mailbox == TOK_COLOR_BLACK && my_rank == ROOT_RANK)  {
+        value = TOK_COLOR_WHITE;
       } else {
-        value = TOK_COLOR_BLACK;
-        MPI_Isend(&value,
-                  1,
-                  MPI_INT,
-                  rank_dst,
-                  TERMINATION,
-                  MPI_COMM_WORLD,
-                  NULL);
-        *proc_color_ptr = TOK_COLOR_WHITE;
+        value = mailbox;
       }
+    } else {
+      value = TOK_COLOR_BLACK;
+      *proc_color_ptr = TOK_COLOR_WHITE;
     }
+
+     
+    printf("Sending tok:%d,  %d to %d\n", value, my_rank, rank_dst);
+    MPI_Isend(&value,
+              1,
+              MPI_INT,
+              rank_dst,
+              TERMINATION,
+              MPI_COMM_WORLD,
+              &req);
+
+    MPI_Iprobe(rank_src,
+              TERMINATION,
+              MPI_COMM_WORLD,
+              &flag,
+              MPI_STATUS_IGNORE); 
   }
 
   return 0;
@@ -461,8 +496,11 @@ void rcv_pbsc(int* act_best_sol_cost_ptr) {
   int flag;
   int poss_best_sol_cost;
   int act_best_sol_cost;
+  int my_rank;
 
   act_best_sol_cost = *act_best_sol_cost_ptr;
+  
+  MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
 
   MPI_Iprobe(MPI_ANY_SOURCE,
             PBSC,
@@ -471,6 +509,7 @@ void rcv_pbsc(int* act_best_sol_cost_ptr) {
             &status);
 
   while ( flag ) {
+    printf("Rec PBSC %d from %d\n", my_rank, status.MPI_SOURCE);
     MPI_Recv(&poss_best_sol_cost, 1, MPI_INT, status.MPI_SOURCE, PBSC,
              MPI_COMM_WORLD, &status);
     if ( poss_best_sol_cost < act_best_sol_cost ) {
@@ -497,6 +536,7 @@ void send_request_work(int my_rank, int p) {
   srand(time(NULL));
   dest_rank = (my_rank + (rand() % (p-1)) + 1) % p;
 
+  printf("Sending workreq %d to %d\n", my_rank, dest_rank);
   MPI_Isend(&dest_rank,
             1,
             MPI_INT,
@@ -516,8 +556,12 @@ int verify_request(Stack s, int n){
   int flag;
   char* buffer;
   int count;
+  int* pro,i;
+  int my_rank;
   MPI_Status status;
   Stack new_s;
+
+  MPI_Comm_rank(MPI_COMM_WORLD,&my_rank);
 
   MPI_Iprobe(MPI_ANY_SOURCE,
             REQUEST_REJECTED,
@@ -526,6 +570,7 @@ int verify_request(Stack s, int n){
             &status);
 
   if ( flag ) {
+    printf("Rec Request_rej %d from %d\n", my_rank, status.MPI_SOURCE);
     MPI_Recv(&trash, 1, MPI_INT, status.MPI_SOURCE, REQUEST_REJECTED,
              MPI_COMM_WORLD, &status);
     return 1;
@@ -538,11 +583,15 @@ int verify_request(Stack s, int n){
             &status);
 
   if ( flag ) {
+
     MPI_Get_count(&status, MPI_BYTE, &count );
+  
     buffer = malloc(count*sizeof(char));
+    printf("Rec req accepted %d from %d\n", my_rank, status.MPI_SOURCE);
     MPI_Recv(buffer, count, MPI_BYTE, status.MPI_SOURCE, REQUEST_ACCEPTED,
              MPI_COMM_WORLD, &status);
     new_s = deserialize_stack(buffer, n);
+
     insert_stack(new_s,s);
     free(buffer);
     return 1;

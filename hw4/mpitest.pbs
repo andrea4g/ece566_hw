@@ -9,4 +9,4 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/bfs 4 4 0 40 50
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/bfs ./atsp/br17.atsp
