@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l procs=100,walltime=1:00:00
+#PBS -l procs=60,walltime=1:00:00
 #PBS -N bfs_job
 #PBS -q edu_shared
 
