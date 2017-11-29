@@ -400,7 +400,7 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
             MPI_STATUS_IGNORE);
   //printf("%d: %d\n",my_rank,rank_src);
 
-  if ( flag ) {
+  while ( flag ) {
     printf("P: %d, RS: %d\n", p,rank_src);
     MPI_Recv( &mailbox,
               1,
@@ -472,6 +472,7 @@ int terminate(int n, int p, int my_rank, int* proc_color_ptr,
     if ( check_termination(p,my_rank,proc_color_ptr) )
       return 1;
     rcv_pbsc(act_best_sol_cost_ptr);
+    serve_pendant_requests(s, proc_color_ptr, n, my_rank);
     if ( !request_on_fly ) {
       send_request_work(my_rank,p);
       request_on_fly = 1;

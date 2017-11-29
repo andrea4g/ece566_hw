@@ -1,48 +1,49 @@
 here 0
 0: HERE -1
 here 0
-ISending bsc 0 to 1
-ISending bsc 0 to 2
-ISending bsc 0 to 3
 0: HERE 97
-Rec Reqeust_work 0 from 3
-Sending REJECT 0 to 3
-Sending workreq 1 to 2
-Rec PBSC 1 from 0
-P: 4, RS: 0
-Rec termination 0 from 0. I am 1
-Sending tok:0,  1 to 2
-Sending workreq 2 to 3
-Rec PBSC 2 from 0
-P: 4, RS: 1
-Rec termination 0 from 1. I am 2
-Sending tok:0,  2 to 3
-Sending workreq 3 to 0
-Rec PBSC 3 from 0
-Rec Request_rej 3 from 0
-Sending workreq 3 to 0
-P: 4, RS: 2
-Rec termination 0 from 2. I am 3
-Sending tok:0,  3 to 0
 here 0
 0: HERE 97
-Sending first token 0 of 4 to 1
-Sending workreq 0 to 1
-P: 4, RS: 3
-Rec termination 0 from 3. I am 0
+Sending first token 0 of 1 to 0
+P: 1, RS: 0
+Rec termination 0 from 0. I am 0
 0 97
 Non credo
-P: 4, RS: 0
-Rec termination 2 from 0. I am 1
-1 -1
+0.000000, 0.000000
+here 0
+0: HERE -1
+here 0
+0: HERE 97
+here 0
+0: HERE 97
+Sending first token 0 of 1 to 0
+P: 1, RS: 0
+Rec termination 0 from 0. I am 0
+0 97
 Non credo
-P: 4, RS: 1
-Rec termination 2 from 1. I am 2
-2 -1
+0.000000, 0.000000
+here 0
+0: HERE -1
+here 0
+0: HERE 97
+here 0
+0: HERE 97
+Sending first token 0 of 1 to 0
+P: 1, RS: 0
+Rec termination 0 from 0. I am 0
+0 97
 Non credo
-P: 4, RS: 2
-Rec termination 2 from 2. I am 3
-3 -1
+0.000000, 0.000000
+here 0
+0: HERE -1
+here 0
+0: HERE 97
+here 0
+0: HERE 97
+Sending first token 0 of 1 to 0
+P: 1, RS: 0
+Rec termination 0 from 0. I am 0
+0 97
 Non credo
 0.000000, 0.000000
 Job complete
