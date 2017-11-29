@@ -180,6 +180,7 @@ char* serialize_stack(Stack s,int n, int* dim_buffer_ptr) {
   for ( i = 0; i < s->count; i++ ) {
     buffer_path = serialize_path(l->p);
     memcpy(&buffer[index],buffer_path,(4+2*n)*sizeof(int));
+    free(buffer_path);
     l = l->next_node;
     index = index + (4+2*n)*sizeof(int);
   }

@@ -130,7 +130,7 @@ char* serialize_path(Path p) {
   int index;
   int n;
 
-  buffer = malloc((4 + 2*(p->dim))*sizeof(int));
+  buffer = malloc((4 + 2*(p->max_dim))*sizeof(int));
   index = 0;
   n = p->max_dim;
 

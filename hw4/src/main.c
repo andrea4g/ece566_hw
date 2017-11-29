@@ -181,13 +181,15 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank, int n) {
       }
       flag = !terminate(n,p,my_rank,&proc_color,&act_best_sol_cost,s);
     } else {
-      printf("here %d\n", my_rank);
+      //printf("here %d\n", my_rank);
       new_act_best_sol_cost = work(g,n,s,act_best_sol_cost,&best_tour);
-      if ( new_act_best_sol_cost != act_best_sol_cost ) {
+      if (  act_best_sol_cost == -1 || 
+            new_act_best_sol_cost < act_best_sol_cost ) {
         act_best_sol_cost = new_act_best_sol_cost;
         broadcast_act_best_sol_cost(my_rank,p,act_best_sol_cost);
       }
       printf("%d: HERE %d\n",my_rank,act_best_sol_cost);
+      rcv_pbsc(&act_best_sol_cost);
       serve_pendant_requests(s, &proc_color, n, my_rank);
     }
   }
@@ -252,13 +254,19 @@ void serve_pendant_requests(Stack s, int* proc_color, int n, int my_rank) {
 void broadcast_act_best_sol_cost(int my_rank, int p, int act_best_sol_cost) {
 
   int i;
-  
+  int private;
+
   MPI_Request req;
+  
+  private = act_best_sol_cost;
+
+  if ( private == -1 )
+    return;
 
   for ( i = 0; i < p; i++ ) {
     if ( i != my_rank ) {
       printf("ISending bsc %d to %d\n", my_rank, i);
-      MPI_Isend(&act_best_sol_cost, 1, MPI_INT, i, 
+      MPI_Isend(&private, 1, MPI_INT, i, 
       PBSC, MPI_COMM_WORLD, &req);
     }
   }
@@ -595,7 +603,7 @@ int verify_request(Stack s, int n){
 
     insert_stack(new_s,s);
     free(buffer);
-    return 1;
+    return 0;
   }
 
 
