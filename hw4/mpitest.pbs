@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l procs=100,walltime=1:00:00
+#PBS -l procs=4,walltime=1:00:00
 #PBS -N bfs_job
 #PBS -q edu_shared
 
@@ -9,4 +9,4 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/bfs ./atsp/bays29.tsp
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/bfs ./atsp/fri26.tsp
