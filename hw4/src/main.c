@@ -1,3 +1,4 @@
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -25,12 +26,18 @@
 #define TOK_COLOR_BLACK   1
 #define TOK_COLOR_GREEN   2
 
-#define EXP_THR 3
+#define EXP_THR 50
 
 #define DEBUG_COMMUNICATION 0
 #define STATS 1
 
-#define POLICY ASYNCH_ROUND_ROBIN
+
+#define RANDOM POLLING 0
+#define SYNCH_ROUND_ROBIN 1
+#define ASYNCH_ROUND_ROBIN 2
+
+
+#define POLICY RANDOM_POLLING
 
 
 /*----------------------------------------------------------------------------*/
@@ -54,6 +61,7 @@ int check_termination(int p, int my_rank, int* proc_color_ptr);
 int work(Graph g,int n, Stack s, int act_best_sol_cost, Path* best_tour_ptr);
 void broadcast_act_best_sol_cost(int my_rank, int p, int* act_best_sol_cost);
 void print_stats(int my_rank);
+void dispatch(int p);
 /*----------------------------------------------------------------------------*/
 /*-------------------------------GLOBAL VARIABLES-----------------------------*/
 /*--------------------------------USED FOR STATS------------------------------*/
@@ -69,6 +77,9 @@ long int num_recv_best_sol_cost;
 long int num_send_request_work;
 long int num_recv_request_work_rejected;
 long int num_recv_request_work_accepted; 
+
+double   working_time;
+double   total_time;
 
 int global_dest_rank;
 
@@ -87,6 +98,7 @@ int main(int argc, char** argv) {
   int i,j,iteration;
   double time_vector[N_ITERATIONS],deviation;
   double average_time, final_time, initial_time;
+  double single_shot_init, single_shot_fin;
   int n;
   int** adj_matrix;
   int* buffer;
@@ -100,13 +112,7 @@ int main(int argc, char** argv) {
   // save the number of processors
   MPI_Comm_size(MPI_COMM_WORLD, &procs_number);
  
-#if POLICY == SYNCH_ROUND_ROBIN
-  procs_number = procs_number - 1;
-  if ( my_rank == procs_number ) {
-    /*TODO*/ 
-    dispatcher();
-  }
-#endif
+
   
   
   
@@ -126,6 +132,8 @@ int main(int argc, char** argv) {
   num_send_request_work           = 0;
   num_recv_request_work_rejected  = 0;
   num_recv_request_work_accepted  = 0;
+  working_time                    = 0;
+  total_time                      = 0;
 #endif
 
 
@@ -161,6 +169,16 @@ int main(int argc, char** argv) {
     }
   }
 
+#if POLICY == SYNCH_ROUND_ROBIN
+  procs_number = procs_number - 1;
+  if ( my_rank == procs_number ) {
+    dispatch(procs_number);
+    MPI_Finalize();
+
+    return 0;
+  }
+#endif
+
   g = init_graph(n,adj_matrix);
   s = init_stack();
 
@@ -177,8 +195,10 @@ int main(int argc, char** argv) {
       add_node_path(p, HOMETOWN);
       push(s,p);
     }
+    single_shot_init = MPI_Wtime(); 
     printf("%d %d\n",my_rank,tsp_best_solution(g,s,procs_number,my_rank,n));
-    printf("Non credo\n");
+    single_shot_fin =  MPI_Wtime();
+    total_time += single_shot_fin - single_shot_init;
   }
   average_time = average_time/N_ITERATIONS;
 
@@ -212,6 +232,7 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank, int n) {
   int first_time, first_color, first_rank_dst;
   Path best_tour;
   MPI_Request req;
+  double single_shot_init,single_shot_fin;
 
   best_tour = NULL;
   first_time = 1;
@@ -242,7 +263,12 @@ int tsp_best_solution(Graph g, Stack s, int p, int my_rank, int n) {
       flag = !terminate(n,p,my_rank,&proc_color,&act_best_sol_cost,s);
     } else {
       //printf("here %d\n", my_rank);
+      single_shot_init = MPI_Wtime();
       new_act_best_sol_cost = work(g,n,s,act_best_sol_cost,&best_tour);
+      single_shot_fin = MPI_Wtime();
+#if STATS == 1
+      working_time += single_shot_fin - single_shot_init;
+#endif
       if (  new_act_best_sol_cost != -1 && 
             ( act_best_sol_cost == -1 ||
               new_act_best_sol_cost < act_best_sol_cost ) ) {
@@ -332,7 +358,6 @@ void serve_pendant_requests(Stack s, int* proc_color, int n, int my_rank) {
 void broadcast_act_best_sol_cost(int my_rank, int p, int* act_best_sol_cost_ptr) {
 
   int i;
-  int private;
 
   MPI_Request req;
 #if STATS == 1 
@@ -385,6 +410,7 @@ int work(Graph g,int n,Stack s, int act_best_sol_cost, Path* best_tour_ptr) {
   int current_node,first_node;
   int i, count;
   int edge_cost;
+
 
   count = 0;
   while ( !stack_empty(s) && count < EXP_THR ) {
@@ -477,7 +503,6 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
   int proc_color;
   MPI_Request req;
   int mailbox;
-  int i;
   
   int rank_src = my_rank>0?((my_rank - 1) % p):(p-1);
   int rank_dst = (my_rank + 1) % p;
@@ -510,13 +535,25 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
     
     if( mailbox == TOK_COLOR_GREEN ) {
        value = TOK_COLOR_GREEN;
+#if POLICY == SYNCH_ROUND_ROBIN
+       rank_dst = my_rank+1;
        MPI_Send( &value,
                   1,
                   MPI_INT,
                   rank_dst,
                   TERMINATION,
                   MPI_COMM_WORLD);   
-      return 1;
+#else
+       if ( my_rank != p-1 ) {
+         MPI_Send( &value,
+                   1,
+                   MPI_INT,
+                   rank_dst,
+                   TERMINATION,
+                   MPI_COMM_WORLD);   
+       }
+#endif
+        return 1;
     }  
     if ( proc_color == TOK_COLOR_WHITE) {
       if ( mailbox == TOK_COLOR_WHITE && my_rank == ROOT_RANK ) {
@@ -655,6 +692,10 @@ void send_request_work(int my_rank, int p) {
   dest_rank = (my_rank + (rand() % (p-1)) + 1) % p;
 #elif POLICY == ASYNCH_ROUND_ROBIN
   dest_rank = global_dest_rank;
+  if ( dest_rank == my_rank ) {
+    global_dest_rank = (global_dest_rank + 1) % p;
+    dest_rank = global_dest_rank;
+  }
   global_dest_rank = (global_dest_rank + 1) % p;
 #else
   MPI_Send(&dest_rank,
@@ -694,7 +735,6 @@ int verify_request(Stack s, int n){
   int flag;
   char* buffer;
   int count;
-  int* pro,i;
   int my_rank;
   MPI_Status status;
   Stack new_s;
@@ -713,6 +753,7 @@ int verify_request(Stack s, int n){
 #endif
     MPI_Recv(&trash, 1, MPI_INT, status.MPI_SOURCE, REQUEST_REJECTED,
              MPI_COMM_WORLD, &status);
+    usleep(100);
 #if STATS == 1
     num_recv_request_work_rejected++;
 #endif
@@ -756,7 +797,6 @@ void print_stats(int my_rank) {
   FILE* stat_file;
   char  name_file[100];
 
-  printf("here");
   sprintf(name_file,"/export/home/acipol2/ece566_hw/hw4/output/stats/stats_%03d.txt", my_rank);
   stat_file = fopen(name_file,"w"); 
   
@@ -772,6 +812,9 @@ void print_stats(int my_rank) {
   fprintf(stat_file,"num_send_request_work           , %lu\n",  num_send_request_work);
   fprintf(stat_file,"num_recv_request_work_rejected  , %lu\n",  num_recv_request_work_rejected);
   fprintf(stat_file,"num_recv_request_work_accepted  , %lu\n",  num_recv_request_work_accepted);
+  fprintf(stat_file,"working_time                    , %f\n" ,  working_time);
+  fprintf(stat_file,"total_time                      , %f\n" ,  total_time);
+  fprintf(stat_file,"percentage_non_idle             , %f\n" ,  100*working_time/total_time);
 
   fclose(stat_file);
 
@@ -784,20 +827,22 @@ void dispatch(int p){
 
   int msg_flag;
   int dest_rank;
+  int requester_rank;
+  int trash;
   MPI_Status status;
 
   dest_rank = 0; 
 
   while ( 1 ) {
    
-      MPI_Iprobe(ROOT_RANK,
+      MPI_Iprobe(p-1,
             TERMINATION,
             MPI_COMM_WORLD,
             &msg_flag,
             &status);
    
       if ( msg_flag ) {
-        MPI_Recv(&term_flag, 1, MPI_INT, status.SOURCE, TERMINATION,
+        MPI_Recv(&trash, 1, MPI_INT, p-1, TERMINATION,
              MPI_COMM_WORLD, &status);
         return;
       }
@@ -809,9 +854,12 @@ void dispatch(int p){
             &status);
   
       if ( msg_flag ) {
-        requester_rank = status.SOURCE;
-        MPI_Recv(&thrash, 1, MPI_INT, requester_rank, REQUEST_DEST_RANK,
+        requester_rank = status.MPI_SOURCE;
+        MPI_Recv(&trash, 1, MPI_INT, requester_rank, REQUEST_DEST_RANK,
              MPI_COMM_WORLD, &status);
+        if (dest_rank == requester_rank ) {
+          dest_rank = (dest_rank + 1) % p;
+        }
         MPI_Send(&dest_rank, 1, MPI_INT, requester_rank, REQUEST_DEST_RANK,
              MPI_COMM_WORLD);
         dest_rank = (dest_rank + 1) % p;
