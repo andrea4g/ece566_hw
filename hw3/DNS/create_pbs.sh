@@ -1,7 +1,7 @@
 #!/bin/bash
 
 for a in {2..5}; do
-  for q in {2..4}; do 
+  for q in {2..4}; do
     Nelement=240
     for i in {1..4}; do
       Kprocs="$(($a*$a*$a))";

@@ -1,5 +1,5 @@
 #!/bin/bash
-#PBS -l procs=Kprocs,walltime=10:00
+#PBS -l procs=Kprocs,walltime=23:59:59
 #PBS -N bfs_job
 #PBS -q edu_shared
 
@@ -9,4 +9,4 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np Kprocs ./bin/bfs Nelement Exp
+mpirun -machinefile $PBS_NODEFILE -np Kprocs ./bin/bfs folder/Filename.ext
