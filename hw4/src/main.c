@@ -27,7 +27,7 @@
 #define EXP_THR 3
 
 #define DEBUG_COMMUNICATION 0
-
+#define STATS 1
 
 /*----------------------------------------------------------------------------*/
 /*-------------------------------TYPES DEFINITION-----------------------------*/
@@ -49,6 +49,52 @@ int terminate(int n,int p, int my_rank, int* proc_color_ptr,
 int check_termination(int p, int my_rank, int* proc_color_ptr);
 int work(Graph g,int n, Stack s, int act_best_sol_cost, Path* best_tour_ptr);
 void broadcast_act_best_sol_cost(int my_rank, int p, int* act_best_sol_cost);
+void print_stats();
+/*----------------------------------------------------------------------------*/
+/*-------------------------------GLOBAL VARIABLES-----------------------------*/
+/*--------------------------------USED FOR STATS------------------------------*/
+long int num_possible_solution;
+long int num_path_pruned;
+long int num_broadcast_best_sol_cost;
+long int num_recv_request_work;
+long int num_request_work_satisfied;
+long int num_request_work_rejected;
+long int num_recv_termination_msgs;
+long int num_recv_poss_best_sol_cost; 
+long int num_recv_best_sol_cost;
+long int num_send_request_work;
+long int num_recv_request_work_rejected;
+long int num_recv_request_work_accepted; 
+
+void print_stats(int my_rank) {
+
+  FILE* stat_file;
+  char  name_file[100];
+
+  printf("here");
+  sprintf(name_file,"/export/home/acipol2/ece566_hw/hw4/output/stats/stats_%03d.txt", my_rank);
+  stat_file = fopen(name_file,"w"); 
+  
+  fprintf(stat_file,"num_possible_solution           , %lu\n",  num_possible_solution);
+  fprintf(stat_file,"num_path_pruned                 , %lu\n",  num_path_pruned);
+  fprintf(stat_file,"num_broadcast_best_sol_cost     , %lu\n",  num_broadcast_best_sol_cost);
+  fprintf(stat_file,"num_recv_request_work           , %lu\n",  num_recv_request_work);
+  fprintf(stat_file,"num_request_work_satisfied      , %lu\n",  num_request_work_satisfied);
+  fprintf(stat_file,"num_request_work_rejected       , %lu\n",  num_request_work_rejected);
+  fprintf(stat_file,"num_recv_termination_msgs       , %lu\n",  num_recv_termination_msgs);
+  fprintf(stat_file,"num_recv_poss_best_sol_cost     , %lu\n",  num_recv_poss_best_sol_cost); 
+  fprintf(stat_file,"num_recv_best_sol_cost          , %lu\n",  num_recv_best_sol_cost);
+  fprintf(stat_file,"num_send_request_work           , %lu\n",  num_send_request_work);
+  fprintf(stat_file,"num_recv_request_work_rejected  , %lu\n",  num_recv_request_work_rejected);
+  fprintf(stat_file,"num_recv_request_work_accepted  , %lu\n",  num_recv_request_work_accepted);
+
+  fclose(stat_file);
+
+  return;
+
+}
+
+
 /*----------------------------------------------------------------------------*/
 /*------------------------------------MAIN------------------------------------*/
 /*----------------------------------------------------------------------------*/
@@ -67,16 +113,33 @@ int main(int argc, char** argv) {
   int est_tour_cost;
   Stack s;
   Graph g;
-  Path p;
-
-
-  
+  Path p; 
 
   // Initialize MPI environment
   MPI_Init(&argc, &argv);
   // save the number of processors
   MPI_Comm_size(MPI_COMM_WORLD, &procs_number);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+#if STATS == 1
+  // Init stats variable
+  num_possible_solution           = 0;
+  num_path_pruned                 = 0;
+  num_broadcast_best_sol_cost     = 0;
+  num_recv_request_work           = 0;
+  num_request_work_satisfied      = 0;
+  num_request_work_rejected       = 0;
+  num_recv_termination_msgs       = 0;
+  num_recv_poss_best_sol_cost     = 0;
+  num_recv_best_sol_cost          = 0;
+  num_send_request_work           = 0;
+  num_recv_request_work_rejected  = 0;
+  num_recv_request_work_accepted  = 0;
+  
+
+#endif
+
+  
 
 
   // if it is the root processor
@@ -138,6 +201,8 @@ int main(int argc, char** argv) {
     // compute and print the rank of the processor and the time it took to complete the task
     printf("%f, %f\n", average_time, deviation);
   }
+
+  print_stats(my_rank);
 
   // close the MPI environment
   MPI_Finalize();
@@ -233,6 +298,9 @@ void serve_pendant_requests(Stack s, int* proc_color, int n, int my_rank) {
 #endif
     MPI_Recv(&trash, 1, MPI_INT, requester_rank, REQUEST_WORK,
              MPI_COMM_WORLD, &status);
+#if STATS == 1
+    num_recv_request_work++;
+#endif
     work_amount = dimension_stack(s);
     if ( work_amount >= 3 ) {
       work_to_send = split_stack(s);
@@ -241,7 +309,10 @@ void serve_pendant_requests(Stack s, int* proc_color, int n, int my_rank) {
       printf("Sending stack %d to %d\n", my_rank, requester_rank);
 #endif
       MPI_Send( buffer, dim_buffer, MPI_BYTE, requester_rank,
-                REQUEST_ACCEPTED, MPI_COMM_WORLD);
+                REQUEST_ACCEPTED, MPI_COMM_WORLD);      
+#if STATS == 1
+      num_request_work_satisfied++;
+#endif
       if ( requester_rank < my_rank ) {
         *proc_color = TOK_COLOR_BLACK;
       }
@@ -251,6 +322,9 @@ void serve_pendant_requests(Stack s, int* proc_color, int n, int my_rank) {
 #endif
       MPI_Send(&trash, 0, MPI_BYTE, requester_rank,
                 REQUEST_REJECTED, MPI_COMM_WORLD);
+#if STATS == 1
+      num_request_work_rejected++;
+#endif
     }
     MPI_Iprobe(MPI_ANY_SOURCE,
               REQUEST_WORK,
@@ -270,7 +344,10 @@ void broadcast_act_best_sol_cost(int my_rank, int p, int* act_best_sol_cost_ptr)
   int private;
 
   MPI_Request req;
-  
+#if STATS == 1 
+  num_broadcast_best_sol_cost++;
+#endif
+
   for ( i = 0; i < p; i++ ) {
     if ( i != my_rank ) {
 #if DEBUG_COMMUNICATION == 1
@@ -326,6 +403,9 @@ int work(Graph g,int n,Stack s, int act_best_sol_cost, Path* best_tour_ptr) {
       first_node = extract_first_node(p);
       edge_cost = get_edge_cost(g,current_node,first_node);
       if ( edge_cost != -1 ) {
+#if STATS == 1
+        num_possible_solution++;
+#endif
         new_act_cost = get_act_tour_cost(p) + edge_cost;
         if (  act_best_sol_cost == -1 || 
               new_act_cost < act_best_sol_cost ) {
@@ -388,9 +468,12 @@ int cost(
   total_cost = est_cost + act_cost;
 
   if (  (act_best_sol_cost > -1) &&
-        (total_cost >= act_best_sol_cost ) )
+        (total_cost >= act_best_sol_cost ) ) {
+#if STATS == 1
+    num_path_pruned++;
+#endif
     return 0;
-
+  }
   *new_est_cost = est_cost;
   *new_act_cost = act_cost;
 
@@ -429,6 +512,11 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
 #if DEBUG_COMMUNICATION == 1
     printf("Rec termination %d from %d. I am %d\n", mailbox,rank_src, my_rank);
 #endif
+    
+#if STATS == 1
+    num_recv_termination_msgs++;
+#endif
+    
     if( mailbox == TOK_COLOR_GREEN ) {
        value = TOK_COLOR_GREEN;
        MPI_Send( &value,
@@ -536,7 +624,13 @@ void rcv_pbsc(int* act_best_sol_cost_ptr) {
 #endif
     MPI_Recv(&poss_best_sol_cost, 1, MPI_INT, status.MPI_SOURCE, PBSC,
              MPI_COMM_WORLD, &status);
+#if STATS == 1
+    num_recv_poss_best_sol_cost++;
+#endif
     if ( poss_best_sol_cost < act_best_sol_cost ) {
+#if STATS == 1
+      num_recv_best_sol_cost++;
+#endif
       act_best_sol_cost = poss_best_sol_cost;
     }
     MPI_Iprobe(MPI_ANY_SOURCE,
@@ -562,6 +656,11 @@ void send_request_work(int my_rank, int p) {
 #if DEBUG_COMMUNICATION == 1
   printf("Sending workreq %d to %d\n", my_rank, dest_rank);
 #endif
+  
+#if STATS == 1
+    num_send_request_work++;
+#endif
+  
   MPI_Isend(&dest_rank,
             1,
             MPI_INT,
@@ -600,6 +699,9 @@ int verify_request(Stack s, int n){
 #endif
     MPI_Recv(&trash, 1, MPI_INT, status.MPI_SOURCE, REQUEST_REJECTED,
              MPI_COMM_WORLD, &status);
+#if STATS == 1
+    num_recv_request_work_rejected++;
+#endif
     return 1;
   }
 
@@ -619,6 +721,9 @@ int verify_request(Stack s, int n){
 #endif
     MPI_Recv(buffer, count, MPI_BYTE, status.MPI_SOURCE, REQUEST_ACCEPTED,
              MPI_COMM_WORLD, &status);
+#if STATS == 1
+    num_recv_request_work_accepted++;
+#endif
     new_s = deserialize_stack(buffer, n);
 
     insert_stack(new_s,s);
