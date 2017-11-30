@@ -19,6 +19,7 @@
 #define REQUEST_REJECTED  2
 #define REQUEST_ACCEPTED  3
 #define PBSC              4
+#define REQUEST_DEST_RANK 5
 
 #define TOK_COLOR_WHITE   0
 #define TOK_COLOR_BLACK   1
@@ -28,6 +29,9 @@
 
 #define DEBUG_COMMUNICATION 0
 #define STATS 1
+
+#define POLICY ASYNCH_ROUND_ROBIN
+
 
 /*----------------------------------------------------------------------------*/
 /*-------------------------------TYPES DEFINITION-----------------------------*/
@@ -49,7 +53,7 @@ int terminate(int n,int p, int my_rank, int* proc_color_ptr,
 int check_termination(int p, int my_rank, int* proc_color_ptr);
 int work(Graph g,int n, Stack s, int act_best_sol_cost, Path* best_tour_ptr);
 void broadcast_act_best_sol_cost(int my_rank, int p, int* act_best_sol_cost);
-void print_stats();
+void print_stats(int my_rank);
 /*----------------------------------------------------------------------------*/
 /*-------------------------------GLOBAL VARIABLES-----------------------------*/
 /*--------------------------------USED FOR STATS------------------------------*/
@@ -66,33 +70,9 @@ long int num_send_request_work;
 long int num_recv_request_work_rejected;
 long int num_recv_request_work_accepted; 
 
-void print_stats(int my_rank) {
+int global_dest_rank;
 
-  FILE* stat_file;
-  char  name_file[100];
 
-  printf("here");
-  sprintf(name_file,"/export/home/acipol2/ece566_hw/hw4/output/stats/stats_%03d.txt", my_rank);
-  stat_file = fopen(name_file,"w"); 
-  
-  fprintf(stat_file,"num_possible_solution           , %lu\n",  num_possible_solution);
-  fprintf(stat_file,"num_path_pruned                 , %lu\n",  num_path_pruned);
-  fprintf(stat_file,"num_broadcast_best_sol_cost     , %lu\n",  num_broadcast_best_sol_cost);
-  fprintf(stat_file,"num_recv_request_work           , %lu\n",  num_recv_request_work);
-  fprintf(stat_file,"num_request_work_satisfied      , %lu\n",  num_request_work_satisfied);
-  fprintf(stat_file,"num_request_work_rejected       , %lu\n",  num_request_work_rejected);
-  fprintf(stat_file,"num_recv_termination_msgs       , %lu\n",  num_recv_termination_msgs);
-  fprintf(stat_file,"num_recv_poss_best_sol_cost     , %lu\n",  num_recv_poss_best_sol_cost); 
-  fprintf(stat_file,"num_recv_best_sol_cost          , %lu\n",  num_recv_best_sol_cost);
-  fprintf(stat_file,"num_send_request_work           , %lu\n",  num_send_request_work);
-  fprintf(stat_file,"num_recv_request_work_rejected  , %lu\n",  num_recv_request_work_rejected);
-  fprintf(stat_file,"num_recv_request_work_accepted  , %lu\n",  num_recv_request_work_accepted);
-
-  fclose(stat_file);
-
-  return;
-
-}
 
 
 /*----------------------------------------------------------------------------*/
@@ -119,6 +99,17 @@ int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
   // save the number of processors
   MPI_Comm_size(MPI_COMM_WORLD, &procs_number);
+ 
+#if POLICY == SYNCH_ROUND_ROBIN
+  procs_number = procs_number - 1;
+  if ( my_rank == procs_number ) {
+    /*TODO*/ 
+    dispatcher();
+  }
+#endif
+  
+  
+  
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
 #if STATS == 1
@@ -135,10 +126,10 @@ int main(int argc, char** argv) {
   num_send_request_work           = 0;
   num_recv_request_work_rejected  = 0;
   num_recv_request_work_accepted  = 0;
-  
-
 #endif
 
+
+  global_dest_rank = (my_rank + 1) % procs_number;
   
 
 
@@ -536,7 +527,14 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
                   rank_dst,
                   TERMINATION,
                   MPI_COMM_WORLD);
-         
+#if POLICY == SYNCH_ROUND_ROBIN
+        MPI_Send( &value,
+                  1,
+                  MPI_INT,
+                  p,
+                  TERMINATION,
+                  MPI_COMM_WORLD);
+#endif
         return 1;
       } else if ( mailbox == TOK_COLOR_BLACK && my_rank == ROOT_RANK)  {
         value = TOK_COLOR_WHITE;
@@ -650,9 +648,25 @@ void send_request_work(int my_rank, int p) {
 
   int dest_rank;
   MPI_Request req;
+  MPI_Status status;
 
+#if POLICY == RANDOM_POLLING
   srand(time(NULL));
   dest_rank = (my_rank + (rand() % (p-1)) + 1) % p;
+#elif POLICY == ASYNCH_ROUND_ROBIN
+  dest_rank = global_dest_rank;
+  global_dest_rank = (global_dest_rank + 1) % p;
+#else
+  MPI_Send(&dest_rank,
+            1,
+            MPI_INT,
+            p,
+            REQUEST_DEST_RANK,
+            MPI_COMM_WORLD);
+  MPI_Recv(&dest_rank, 1, MPI_INT, p, REQUEST_DEST_RANK,
+            MPI_COMM_WORLD, &status);
+#endif
+
 #if DEBUG_COMMUNICATION == 1
   printf("Sending workreq %d to %d\n", my_rank, dest_rank);
 #endif
@@ -735,6 +749,84 @@ int verify_request(Stack s, int n){
   return -1;
 
 }
+
+
+void print_stats(int my_rank) {
+
+  FILE* stat_file;
+  char  name_file[100];
+
+  printf("here");
+  sprintf(name_file,"/export/home/acipol2/ece566_hw/hw4/output/stats/stats_%03d.txt", my_rank);
+  stat_file = fopen(name_file,"w"); 
+  
+  fprintf(stat_file,"num_possible_solution           , %lu\n",  num_possible_solution);
+  fprintf(stat_file,"num_path_pruned                 , %lu\n",  num_path_pruned);
+  fprintf(stat_file,"num_broadcast_best_sol_cost     , %lu\n",  num_broadcast_best_sol_cost);
+  fprintf(stat_file,"num_recv_request_work           , %lu\n",  num_recv_request_work);
+  fprintf(stat_file,"num_request_work_satisfied      , %lu\n",  num_request_work_satisfied);
+  fprintf(stat_file,"num_request_work_rejected       , %lu\n",  num_request_work_rejected);
+  fprintf(stat_file,"num_recv_termination_msgs       , %lu\n",  num_recv_termination_msgs);
+  fprintf(stat_file,"num_recv_poss_best_sol_cost     , %lu\n",  num_recv_poss_best_sol_cost); 
+  fprintf(stat_file,"num_recv_best_sol_cost          , %lu\n",  num_recv_best_sol_cost);
+  fprintf(stat_file,"num_send_request_work           , %lu\n",  num_send_request_work);
+  fprintf(stat_file,"num_recv_request_work_rejected  , %lu\n",  num_recv_request_work_rejected);
+  fprintf(stat_file,"num_recv_request_work_accepted  , %lu\n",  num_recv_request_work_accepted);
+
+  fclose(stat_file);
+
+  return;
+
+}
+
+
+void dispatch(int p){
+
+  int msg_flag;
+  int dest_rank;
+  MPI_Status status;
+
+  dest_rank = 0; 
+
+  while ( 1 ) {
+   
+      MPI_Iprobe(ROOT_RANK,
+            TERMINATION,
+            MPI_COMM_WORLD,
+            &msg_flag,
+            &status);
+   
+      if ( msg_flag ) {
+        MPI_Recv(&term_flag, 1, MPI_INT, status.SOURCE, TERMINATION,
+             MPI_COMM_WORLD, &status);
+        return;
+      }
+       
+      MPI_Iprobe(MPI_ANY_SOURCE,
+            REQUEST_DEST_RANK,
+            MPI_COMM_WORLD,
+            &msg_flag,
+            &status);
+  
+      if ( msg_flag ) {
+        requester_rank = status.SOURCE;
+        MPI_Recv(&thrash, 1, MPI_INT, requester_rank, REQUEST_DEST_RANK,
+             MPI_COMM_WORLD, &status);
+        MPI_Send(&dest_rank, 1, MPI_INT, requester_rank, REQUEST_DEST_RANK,
+             MPI_COMM_WORLD);
+        dest_rank = (dest_rank + 1) % p;
+      } 
+  }
+
+  return;
+
+
+}
+
+
+
+
+
 /*
 void cleanup_messages(){
  
