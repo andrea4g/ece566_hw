@@ -9,4 +9,4 @@
 
 module load tools/mpich2-1.5-gcc
 
-mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/bfs ./atsp/bays29.tsp
+mpirun -machinefile $PBS_NODEFILE -np $PBS_NP ./bin/bfs_SYNCH_ROUND_ROBIN ./atsp/fri26.tsp fri26

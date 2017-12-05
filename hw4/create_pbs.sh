@@ -24,7 +24,7 @@ do
 #  echo ${a}
 #  echo ${i}
   for j in {1..5}; do
-    sed "s/Filename/${File[a]}/g" pref.pbs > "test_${File[a]}_${Kprocs[j]}.pbs";
+    sed "s/Filename/${File[a]}/g" pref_RANDOM_POLLING.pbs > "test_${File[a]}_${Kprocs[j]}.pbs";
     sed -i "s/ext/${ext}/g" "test_${File[a]}_${Kprocs[j]}.pbs"
     sed -i "s/folder/${folder}/g" "test_${File[a]}_${Kprocs[j]}.pbs"
     sed -i "s/Kprocs/${Kprocs[j]}/g" "test_${File[a]}_${Kprocs[j]}.pbs"

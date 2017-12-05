@@ -1,0 +1,15 @@
+num_possible_solution           , 18
+num_path_pruned                 , 6220
+num_broadcast_best_sol_cost     , 3
+num_recv_request_work           , 31
+num_request_work_satisfied      , 2
+num_request_work_rejected       , 29
+num_recv_termination_msgs       , 3
+num_recv_poss_best_sol_cost     , 58
+num_recv_best_sol_cost          , 22
+num_send_request_work           , 26
+num_recv_request_work_rejected  , 23
+num_recv_request_work_accepted  , 2
+working_time                    , 0.000950
+total_time                      , 0.030380
+percentage_non_idle             , 3.128164

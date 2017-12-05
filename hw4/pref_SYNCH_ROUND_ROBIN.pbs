@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l procs=Kprocs,walltime=23:59:59
+#PBS -N bfs_job
+#PBS -q edu_shared
+
+#PBS -e output/stats_SYNCH_ROUND_ROBIN/mpitest_Filename_Kprocs.err
+#PBS -o output/stats_SYNCH_ROUND_ROBIN/mpitest_Filename_Kprocs.out
+#PBS -d ./
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np Kprocs ./bin/bfs_SYNCH_ROUND_ROBIN folder/Filename.ext Filename

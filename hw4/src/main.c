@@ -10,7 +10,6 @@
 
 
 #define N_ITERATIONS      1
-#define DEBUG             1
 
 #define ROOT_RANK         0
 #define HOMETOWN          0
@@ -26,18 +25,18 @@
 #define TOK_COLOR_BLACK   1
 #define TOK_COLOR_GREEN   2
 
-#define EXP_THR 50
+#define EXP_THR 25
 
-#define DEBUG_COMMUNICATION 0
+#define DEBUG_COMMUNICATION 0 
+#define DEBUG 0
 #define STATS 1
-
 
 #define RANDOM POLLING 0
 #define SYNCH_ROUND_ROBIN 1
 #define ASYNCH_ROUND_ROBIN 2
 
 
-#define POLICY RANDOM_POLLING
+#define POLICY SYNCH_ROUND_ROBIN
 
 
 /*----------------------------------------------------------------------------*/
@@ -60,7 +59,7 @@ int terminate(int n,int p, int my_rank, int* proc_color_ptr,
 int check_termination(int p, int my_rank, int* proc_color_ptr);
 int work(Graph g,int n, Stack s, int act_best_sol_cost, Path* best_tour_ptr);
 void broadcast_act_best_sol_cost(int my_rank, int p, int* act_best_sol_cost);
-void print_stats(int my_rank);
+void print_stats(int my_rank, int num_procs, char* filename);
 void dispatch(int p);
 /*----------------------------------------------------------------------------*/
 /*-------------------------------GLOBAL VARIABLES-----------------------------*/
@@ -96,8 +95,9 @@ int main(int argc, char** argv) {
   int my_rank;
   int procs_number;
   int i,j,iteration;
+  int sol_cost;
   double time_vector[N_ITERATIONS],deviation;
-  double average_time, final_time, initial_time;
+  double average_time, initial_time;
   double single_shot_init, single_shot_fin;
   int n;
   int** adj_matrix;
@@ -172,7 +172,10 @@ int main(int argc, char** argv) {
 #if POLICY == SYNCH_ROUND_ROBIN
   procs_number = procs_number - 1;
   if ( my_rank == procs_number ) {
-    dispatch(procs_number);
+    
+    for ( iteration = 0; iteration < N_ITERATIONS; iteration++ ) {
+      dispatch(procs_number);
+    }
     MPI_Finalize();
 
     return 0;
@@ -196,24 +199,27 @@ int main(int argc, char** argv) {
       push(s,p);
     }
     single_shot_init = MPI_Wtime(); 
-    printf("%d %d\n",my_rank,tsp_best_solution(g,s,procs_number,my_rank,n));
+    sol_cost = tsp_best_solution(g,s,procs_number,my_rank,n);
+#if DEBUG == 1
+    printf("%d %d\n",my_rank, sol_cost);
+#endif
     single_shot_fin =  MPI_Wtime();
     total_time += single_shot_fin - single_shot_init;
+    average_time += single_shot_fin - initial_time;
   }
   average_time = average_time/N_ITERATIONS;
 
   if ( my_rank == ROOT_RANK ) {
-
     deviation = 0;
     for ( i = 0; i < N_ITERATIONS; i++ ) {
-
       deviation += (time_vector[i] - average_time)*(time_vector[i] - average_time);
     }
     // compute and print the rank of the processor and the time it took to complete the task
     printf("%f, %f\n", average_time, deviation);
   }
 
-  print_stats(my_rank);
+  
+  print_stats(my_rank,procs_number,argv[2]);
 
   // close the MPI environment
   MPI_Finalize();
@@ -564,6 +570,7 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
                   rank_dst,
                   TERMINATION,
                   MPI_COMM_WORLD);
+/*
 #if POLICY == SYNCH_ROUND_ROBIN
         MPI_Send( &value,
                   1,
@@ -572,6 +579,7 @@ int check_termination(int p, int my_rank, int* proc_color_ptr){
                   TERMINATION,
                   MPI_COMM_WORLD);
 #endif
+*/
         return 1;
       } else if ( mailbox == TOK_COLOR_BLACK && my_rank == ROOT_RANK)  {
         value = TOK_COLOR_WHITE;
@@ -685,7 +693,7 @@ void send_request_work(int my_rank, int p) {
 
   int dest_rank;
   MPI_Request req;
-  MPI_Status status;
+
 
 #if POLICY == RANDOM_POLLING
   srand(time(NULL));
@@ -698,6 +706,7 @@ void send_request_work(int my_rank, int p) {
   }
   global_dest_rank = (global_dest_rank + 1) % p;
 #else
+  MPI_Status status;
   MPI_Send(&dest_rank,
             1,
             MPI_INT,
@@ -792,28 +801,41 @@ int verify_request(Stack s, int n){
 }
 
 
-void print_stats(int my_rank) {
+void print_stats(int my_rank, int num_procs, char* filename) {
 
   FILE* stat_file;
   char  name_file[100];
 
-  sprintf(name_file,"/export/home/acipol2/ece566_hw/hw4/output/stats/stats_%03d.txt", my_rank);
+#if POLICY == RANDOM_POLLING
+  sprintf(name_file,
+    "/export/home/acipol2/ece566_hw/hw4/output/stats_RANDOM_POLLING/stats_%03d_%03d_%s.txt", 
+    my_rank, num_procs, filename);
+#elif POLICY == ASYNCH_ROUND_ROBIN
+  sprintf(name_file,
+    "/export/home/acipol2/ece566_hw/hw4/output/stats_ASYNCH_ROUND_ROBIN/stats_%03d_%03d_%s.txt", 
+    my_rank, num_procs, filename);
+#else
+  sprintf(name_file,
+    "/export/home/acipol2/ece566_hw/hw4/output/stats_SYNCH_ROUND_ROBIN/stats_%03d_%03d_%s.txt", 
+    my_rank, num_procs, filename);
+#endif
+  
   stat_file = fopen(name_file,"w"); 
   
-  fprintf(stat_file,"num_possible_solution           , %lu\n",  num_possible_solution);
-  fprintf(stat_file,"num_path_pruned                 , %lu\n",  num_path_pruned);
-  fprintf(stat_file,"num_broadcast_best_sol_cost     , %lu\n",  num_broadcast_best_sol_cost);
-  fprintf(stat_file,"num_recv_request_work           , %lu\n",  num_recv_request_work);
-  fprintf(stat_file,"num_request_work_satisfied      , %lu\n",  num_request_work_satisfied);
-  fprintf(stat_file,"num_request_work_rejected       , %lu\n",  num_request_work_rejected);
-  fprintf(stat_file,"num_recv_termination_msgs       , %lu\n",  num_recv_termination_msgs);
-  fprintf(stat_file,"num_recv_poss_best_sol_cost     , %lu\n",  num_recv_poss_best_sol_cost); 
-  fprintf(stat_file,"num_recv_best_sol_cost          , %lu\n",  num_recv_best_sol_cost);
-  fprintf(stat_file,"num_send_request_work           , %lu\n",  num_send_request_work);
-  fprintf(stat_file,"num_recv_request_work_rejected  , %lu\n",  num_recv_request_work_rejected);
-  fprintf(stat_file,"num_recv_request_work_accepted  , %lu\n",  num_recv_request_work_accepted);
-  fprintf(stat_file,"working_time                    , %f\n" ,  working_time);
-  fprintf(stat_file,"total_time                      , %f\n" ,  total_time);
+  fprintf(stat_file,"num_possible_solution           , %lu\n",  num_possible_solution/N_ITERATIONS);
+  fprintf(stat_file,"num_path_pruned                 , %lu\n",  num_path_pruned/N_ITERATIONS);
+  fprintf(stat_file,"num_broadcast_best_sol_cost     , %lu\n",  num_broadcast_best_sol_cost/N_ITERATIONS);
+  fprintf(stat_file,"num_recv_request_work           , %lu\n",  num_recv_request_work/N_ITERATIONS);
+  fprintf(stat_file,"num_request_work_satisfied      , %lu\n",  num_request_work_satisfied/N_ITERATIONS);
+  fprintf(stat_file,"num_request_work_rejected       , %lu\n",  num_request_work_rejected/N_ITERATIONS);
+  fprintf(stat_file,"num_recv_termination_msgs       , %lu\n",  num_recv_termination_msgs/N_ITERATIONS);
+  fprintf(stat_file,"num_recv_poss_best_sol_cost     , %lu\n",  num_recv_poss_best_sol_cost/N_ITERATIONS); 
+  fprintf(stat_file,"num_recv_best_sol_cost          , %lu\n",  num_recv_best_sol_cost/N_ITERATIONS);
+  fprintf(stat_file,"num_send_request_work           , %lu\n",  num_send_request_work/N_ITERATIONS);
+  fprintf(stat_file,"num_recv_request_work_rejected  , %lu\n",  num_recv_request_work_rejected/N_ITERATIONS);
+  fprintf(stat_file,"num_recv_request_work_accepted  , %lu\n",  num_recv_request_work_accepted/N_ITERATIONS);
+  fprintf(stat_file,"working_time                    , %f\n" ,  working_time/N_ITERATIONS);
+  fprintf(stat_file,"total_time                      , %f\n" ,  total_time/N_ITERATIONS);
   fprintf(stat_file,"percentage_non_idle             , %f\n" ,  100*working_time/total_time);
 
   fclose(stat_file);
@@ -870,47 +892,4 @@ void dispatch(int p){
 
 
 }
-
-
-
-
-
-/*
-void cleanup_messages(){
- 
-  int flag;
-  MPI_Status status;
-
-  MPI_Iprobe(MPI_ANY_SOURCE,
-            MPI_ANY_TAG,
-            MPI_COMM_WORLD,
-            &flag,
-            &status);
-
-  while ( flag ) {
-
-    MPI_Recv(&poss_best_sol_cost, 1, MPI_INT, MPI_ANY, PBSC,
-             MPI_COMM_WORLD, &status);
-    if ( poss_best_sol_cost < act_best_sol_cost ) {
-      act_best_sol_cost = poss_best_sol_cost;
-    }
-    MPI_Iprobe(MPI_ANY_SOURCE,
-              PBSC,
-              MPI_COMM_WORLD,
-              &flag,
-              &status);
-  }
-}*/
-
-
-
-
-
-
-
-
-
-
-
-
 

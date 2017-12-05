@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -l procs=1,walltime=23:59:59
+#PBS -N bfs_job
+#PBS -q edu_shared
+
+#PBS -e output/stats_ASYNCH_ROUND_ROBIN/mpitest_fri26_1.err
+#PBS -o output/stats_ASYNCH_ROUND_ROBIN/mpitest_fri26_1.out
+#PBS -d ./
+
+module load tools/mpich2-1.5-gcc
+
+mpirun -machinefile $PBS_NODEFILE -np 1 ./bin/bfs_ASYNCH_ROUND_ROBIN atsp/fri26.tsp fri26
