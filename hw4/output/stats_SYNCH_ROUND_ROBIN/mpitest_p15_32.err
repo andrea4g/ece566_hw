@@ -1,9 +1,0 @@
-Assertion failed in file src/mpid/ch3/src/ch3u_handle_connection.c at line 334: vc->state == MPIDI_VC_STATE_LOCAL_CLOSE || vc->state == MPIDI_VC_STATE_CLOSE_ACKED
-internal ABORT - process 12
-[proxy:0:1@compute-1-37.local] HYD_pmcd_pmip_control_cmd_cb (./pm/pmiserv/pmip_cb.c:883): assert (!closed) failed
-[proxy:0:1@compute-1-37.local] HYDT_dmxu_poll_wait_for_event (./tools/demux/demux_poll.c:77): callback returned error status
-[proxy:0:1@compute-1-37.local] main (./pm/pmiserv/pmip.c:210): demux engine error waiting for event
-[mpiexec@compute-1-36.local] HYDT_bscu_wait_for_completion (./tools/bootstrap/utils/bscu_wait.c:76): one of the processes terminated badly; aborting
-[mpiexec@compute-1-36.local] HYDT_bsci_wait_for_completion (./tools/bootstrap/src/bsci_wait.c:23): launcher returned error waiting for completion
-[mpiexec@compute-1-36.local] HYD_pmci_wait_for_completion (./pm/pmiserv/pmiserv_pmci.c:216): launcher returned error waiting for completion
-[mpiexec@compute-1-36.local] main (./ui/mpich/mpiexec.c:325): process manager error waiting for completion
